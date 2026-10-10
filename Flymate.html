@@ -15,6 +15,7 @@
   --good:#12805a; --good-bg:rgba(18,128,90,.11);
   --warn:#a36600; --warn-bg:rgba(200,135,0,.14);
   --bad:#c8392d; --bad-bg:rgba(200,57,45,.1);
+  --c-wx:#2f6fdb; --c-busy:#c27c0e; --c-late:#8b4fd6; --c-ops:#5d6b7e;
   /* tracker keeps one night-sky look in both themes */
   --trk-bg:rgba(8,13,30,.8); --trk-panel:rgba(255,255,255,.05); --trk-border:rgba(255,255,255,.1);
   --trk-ink:#eef3ff; --trk-ink-2:#8d9abb; --trk-dot:#7cc4ff;
@@ -35,6 +36,7 @@
   --warn:#f0b44a; --warn-bg:rgba(240,180,74,.14);
   --bad:#ff7468; --bad-bg:rgba(255,116,104,.13);
   --trk-bg:rgba(6,10,24,.72);
+  --c-wx:#6ea8ff; --c-busy:#f2b347; --c-late:#b98cff; --c-ops:#9aa8bb;
   color-scheme:dark;
 }}
 :root[data-theme="dark"]{
@@ -48,6 +50,7 @@
   --warn:#f0b44a; --warn-bg:rgba(240,180,74,.14);
   --bad:#ff7468; --bad-bg:rgba(255,116,104,.13);
   --trk-bg:rgba(6,10,24,.72);
+  --c-wx:#6ea8ff; --c-busy:#f2b347; --c-late:#b98cff; --c-ops:#9aa8bb;
   color-scheme:dark;
 }
 
@@ -143,8 +146,8 @@ button:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
 @keyframes pop{0%{transform:scale(.8)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
 
 /* segmented time of day */
-.seg{position:relative;display:grid;grid-template-columns:repeat(3,1fr);padding:4px;min-height:44px;border-radius:12px;background:var(--glass-2);border:1px solid var(--border)}
-.seg-ind{position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px)/3);border-radius:9px;background:var(--accent);box-shadow:0 4px 14px var(--accent-soft);
+.seg{position:relative;display:grid;grid-template-columns:repeat(var(--n,3),1fr);padding:4px;min-height:44px;border-radius:12px;background:var(--glass-2);border:1px solid var(--border)}
+.seg-ind{position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px)/var(--n,3));border-radius:9px;background:var(--accent);box-shadow:0 4px 14px var(--accent-soft);
   transform:translateX(calc(var(--i,0) * 100%));transition:transform .4s var(--ease)}
 .seg button{position:relative;z-index:1;font:inherit;font-weight:600;font-size:14px;border:0;background:transparent;color:var(--ink-2);border-radius:9px;cursor:pointer;padding:0 6px;transition:color .3s ease}
 .seg button[aria-checked="true"]{color:var(--on-accent)}
@@ -219,7 +222,13 @@ button:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
 .panel{padding:20px 22px;min-width:0}
 .panel h2{font-size:16px;font-weight:700;margin:0 0 12px;letter-spacing:-.01em}
 .rows{list-style:none;margin:0;padding:0}
-.rows li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.rows li{display:flex;flex-direction:column;gap:6px;padding:12px 0;border-top:1px solid var(--line)}
+.why-row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.move{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-left:18px}
+.move-t{font-size:13px;font-weight:600;color:var(--ink-2);min-width:0}
+.move-btn{flex:none;font:inherit;font-size:12px;font-weight:700;padding:5px 12px;min-height:30px;border-radius:999px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;transition:background-color .2s,color .2s,transform .2s var(--ease)}
+.move-btn:hover{background:var(--accent);color:var(--on-accent)}
+.move-btn:active{transform:scale(.96)}
 .rows li:first-child{border-top:0}
 .why{display:flex;align-items:center;gap:10px;min-width:0;font-weight:600}
 .why i{flex:none;width:8px;height:8px;border-radius:50%}
@@ -269,6 +278,86 @@ button:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
 .sw{width:10px;height:10px;border-radius:3px}
 .tip{position:absolute;z-index:5;pointer-events:none;padding:7px 10px;border-radius:10px;font-size:12.5px;font-weight:600;color:var(--ink);background:var(--tip);border:1px solid var(--border);box-shadow:0 6px 20px var(--shadow);white-space:nowrap;transform:translate(-50%,calc(-100% - 10px))}
 .tip span{color:var(--ink-2);font-weight:500}
+/* dark segmented control (on map panels) */
+.seg.dark{background:rgba(255,255,255,.06);border-color:var(--trk-border)}
+.seg.dark button{color:var(--trk-ink-2)}
+.seg.dark button[aria-checked="true"]{color:#fff}
+.seg.dark .seg-ind{background:linear-gradient(90deg,var(--trk-a),var(--trk-b));box-shadow:none}
+#wxLayer{min-width:220px}
+#sortSeg,#chartOpt .seg{min-height:36px;min-width:220px}
+#chartOpt .seg{min-width:150px}
+#sortSeg button,#chartOpt .seg button{font-size:13px}
+
+/* ---------- weather map ---------- */
+.wx{position:relative;border-radius:22px;overflow:hidden;background:var(--trk-bg);border:1px solid var(--trk-border);color:var(--trk-ink);
+  -webkit-backdrop-filter:blur(24px) saturate(140%);backdrop-filter:blur(24px) saturate(140%);box-shadow:0 14px 40px var(--shadow)}
+.wx-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:16px 18px 12px}
+.wx-title{font-weight:800;font-size:16px}
+.wx-sub{font-size:12px;font-weight:600;color:var(--trk-ink-2)}
+.wx-map{position:relative;height:360px;margin:0 14px;border-radius:14px;overflow:hidden;border:1px solid var(--trk-border);cursor:crosshair;touch-action:pan-y}
+@media (max-width:600px){.wx-map{height:280px}}
+.wx-map canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.wx-tip{position:absolute;z-index:2;pointer-events:none;transform:translate(14px,-50%);padding:7px 10px;border-radius:10px;background:rgba(8,13,30,.9);border:1px solid var(--trk-border);font-size:12.5px;font-weight:600;line-height:1.35;white-space:nowrap;color:var(--trk-ink)}
+.wx-ctrl{display:flex;align-items:center;gap:14px;padding:14px 18px 4px}
+.play{flex:none;width:44px;height:44px;border-radius:50%;border:0;cursor:pointer;display:grid;place-items:center;background:linear-gradient(135deg,var(--trk-a),var(--trk-b));box-shadow:0 6px 18px rgba(139,92,246,.35);transition:transform .2s var(--ease)}
+.play:hover{transform:scale(1.06)}
+.play:active{transform:scale(.95)}
+.play svg{width:18px;height:18px;fill:#fff}
+.wx-time{font-weight:800;font-size:20px;font-variant-numeric:tabular-nums;min-width:62px}
+.wx-slider{position:relative;flex:1;min-width:0;padding-bottom:20px}
+.wx-slider input{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;margin:8px 0;background:rgba(255,255,255,.14);cursor:pointer}
+.wx-slider input::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:0;box-shadow:0 0 0 5px rgba(139,92,246,.3),0 0 12px rgba(56,189,248,.6)}
+.wx-slider input::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:0;box-shadow:0 0 0 5px rgba(139,92,246,.3),0 0 12px rgba(56,189,248,.6)}
+.wx-slider input:focus-visible{outline:2px solid var(--trk-a);outline-offset:4px}
+.wx-mark{position:absolute;top:26px;transform:translateX(-50%);font-size:11px;font-weight:700;color:var(--trk-ink-2);white-space:nowrap;pointer-events:none}
+.wx-mark::before{content:"";position:absolute;left:50%;top:-10px;width:2px;height:8px;margin-left:-1px;border-radius:1px;background:var(--trk-c)}
+.wx-legend{display:flex;align-items:center;gap:10px;padding:6px 18px 16px;font-size:12px;font-weight:600;color:var(--trk-ink-2)}
+.wx-bar{display:block;flex:1;max-width:280px;height:8px;border-radius:4px}
+
+/* ---------- flights list extras ---------- */
+.phead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.phead h2{margin:0}
+.opt .w1{white-space:nowrap}
+.opt .when .w1 small{font-family:var(--f);font-weight:600;font-size:13px;color:var(--ink-3);margin-left:4px}
+.val.tone-good{color:var(--good)} .val.tone-warn{color:var(--warn)} .val.tone-bad{color:var(--bad)}
+.more{width:100%;margin-top:6px;padding:10px;border:1px dashed var(--line);border-radius:12px;background:transparent;font:inherit;font-weight:700;color:var(--accent);cursor:pointer;transition:background-color .2s}
+.more:hover{background:var(--glass-2)}
+.copt{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+
+/* ---------- chart extras ---------- */
+.c-band{fill:var(--accent-soft)}
+.c-obs{fill:none;stroke:var(--ink-2);stroke-width:2;stroke-linejoin:round}
+.c-fc{fill:none;stroke:var(--accent);stroke-width:2.25;stroke-dasharray:6 5;stroke-linecap:round}
+.c-best{fill:var(--good);stroke:var(--tip);stroke-width:2}
+.c-best-lab{fill:var(--good);font-size:12px;font-weight:700;font-family:var(--f)}
+.sw.dash{height:3px;background:repeating-linear-gradient(90deg,var(--accent) 0 4px,transparent 4px 7px)}
+.c-wx{fill:var(--c-wx)} .c-busy{fill:var(--c-busy)} .c-late{fill:var(--c-late)} .c-ops{fill:var(--c-ops)}
+.c-cxl{fill:var(--ink-3);fill-opacity:.4}
+.c-cxl-lab{fill:var(--ink);font-size:11px;font-weight:800;font-family:var(--f)}
+.c-heat{fill:var(--bad)}
+.c-heat-lab{fill:var(--ink);font-size:11px;font-weight:700;font-family:var(--f);pointer-events:none}
+.c-heat-lab.on{fill:#fff}
+.c-heat-you{fill:none;stroke:var(--ink);stroke-width:2;pointer-events:none}
+.c-heat-best{fill:none;stroke:var(--good);stroke-width:2.5;stroke-dasharray:4 3;pointer-events:none}
+.sw.heat-lo{background:var(--bad-bg)} .sw.heat-hi{background:var(--bad)}
+.sw.ring-you{background:transparent;box-shadow:inset 0 0 0 2px var(--ink)}
+.sw.ring-best{background:transparent;box-shadow:inset 0 0 0 2px var(--good)}
+
+
+/* calendar fares */
+.cal-grid button{height:46px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1.1}
+.cal-grid .dpp{font-size:10px;font-weight:700;color:var(--ink-3)}
+.cal-grid .dpp.lo{color:var(--good)} .cal-grid .dpp.hi{color:var(--bad)}
+.cal-grid button[aria-pressed="true"] .dpp{color:var(--on-accent)}
+.cal-grid button.is-hol .dn{text-decoration:underline;text-decoration-color:var(--warn);text-decoration-thickness:2px;text-underline-offset:3px}
+.cal{min-width:312px}
+.cal-foot{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--line);font-size:11px;font-weight:600;color:var(--ink-2)}
+.cal-foot span{display:inline-flex;align-items:center;gap:5px}
+.cal-foot i{width:8px;height:8px;border-radius:50%}
+.cal-foot i.lo{background:var(--good)} .cal-foot i.hi{background:var(--bad)} .cal-foot i.hol{background:var(--warn);border-radius:2px;height:3px;width:12px}
+.cal-foot .muted{margin-left:auto;color:var(--ink-3)}
+.tag.sale{background:var(--good-bg);color:var(--good)}
+.hol-chip{font-family:var(--f);font-weight:700;color:var(--warn)}
 .foot{text-align:center;font-size:12px;color:var(--ink-2)}
 .fade{animation:fade .45s var(--ease) both}
 @keyframes fade{from{opacity:.35;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -297,40 +386,39 @@ button:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
   <p class="err" id="err" hidden></p>
 
   <div id="result" aria-live="polite"></div>
-  <p class="foot">Preview · all weather, delay history, fares and flight tracking are simulated.</p>
+  <p class="foot">Preview · weather, delays, fares and flights are simulated.</p>
 </div>
 
 <script>
 (() => {
 const TODAY = new Date(2026, 9, 10);
+// storm/rain = October climate weights (simulated), hub = how busy the airport is
 const AIRPORTS = {
   KUL:{name:'Kuala Lumpur', lat:2.7456, lon:101.7099, cc:'MY', hub:1.0, storm:.75, rain:.18},
   PEN:{name:'Penang', lat:5.2971, lon:100.2770, cc:'MY', hub:.5, storm:.7, rain:.16},
-  BKI:{name:'Kota Kinabalu', lat:5.9372, lon:116.0510, cc:'MY', hub:.45, storm:.8, rain:.2},
-  KCH:{name:'Kuching', lat:1.4847, lon:110.3470, cc:'MY', hub:.4, storm:.85, rain:.24},
   LGK:{name:'Langkawi', lat:6.3297, lon:99.7287, cc:'MY', hub:.2, storm:.6, rain:.14},
+  JHB:{name:'Johor Bahru', lat:1.6411, lon:103.6697, cc:'MY', hub:.35, storm:.75, rain:.2},
+  KCH:{name:'Kuching', lat:1.4847, lon:110.3470, cc:'MY', hub:.4, storm:.85, rain:.24},
+  BKI:{name:'Kota Kinabalu', lat:5.9372, lon:116.0510, cc:'MY', hub:.45, storm:.8, rain:.2},
   SIN:{name:'Singapore', lat:1.3644, lon:103.9915, cc:'SG', hub:1.0, storm:.7, rain:.18},
   BKK:{name:'Bangkok', lat:13.6900, lon:100.7501, cc:'TH', hub:.95, storm:.55, rain:.15},
-  CGK:{name:'Jakarta', lat:-6.1256, lon:106.6559, cc:'ID', hub:.9, storm:.8, rain:.2},
+  HKT:{name:'Phuket', lat:8.1132, lon:98.3169, cc:'TH', hub:.5, storm:.7, rain:.2},
+  CGK:{name:'Jakarta', lat:-6.1256, lon:106.6559, cc:'ID', hub:.9, storm:.7, rain:.18},
+  DPS:{name:'Bali', lat:-8.7482, lon:115.1672, cc:'ID', hub:.6, storm:.4, rain:.1},
+  SGN:{name:'Ho Chi Minh City', lat:10.8188, lon:106.6519, cc:'VN', hub:.85, storm:.7, rain:.2},
+  HAN:{name:'Hanoi', lat:21.2212, lon:105.8072, cc:'VN', hub:.7, storm:.25, rain:.1},
+  MNL:{name:'Manila', lat:14.5086, lon:121.0198, cc:'PH', hub:.9, storm:.65, rain:.2},
+  HKG:{name:'Hong Kong', lat:22.3080, lon:113.9185, cc:'HK', hub:1.0, storm:.3, rain:.1},
 };
 // f = fare multiplier vs a budget carrier, d = delay tendency (simulated)
 const AIRLINES = {
-  AK:{name:'AirAsia', f:1.0, d:.25},
-  FD:{name:'Thai AirAsia', f:1.0, d:.22},
-  OD:{name:'Batik Air', f:1.18, d:.18},
-  FY:{name:'Firefly', f:1.1, d:.05},
-  MH:{name:'Malaysia Airlines', f:1.45, d:-.12},
-  SQ:{name:'Singapore Airlines', f:1.8, d:-.25},
-  TR:{name:'Scoot', f:1.05, d:.15},
-  TG:{name:'Thai Airways', f:1.5, d:-.05},
-  GA:{name:'Garuda Indonesia', f:1.45, d:-.05},
-  JT:{name:'Lion Air', f:.95, d:.35},
-  VJ:{name:'VietJet Air', f:.95, d:.3},
-  VN:{name:'Vietnam Airlines', f:1.35, d:-.02},
-  '5J':{name:'Cebu Pacific', f:1.0, d:.3},
-  PR:{name:'Philippine Airlines', f:1.4, d:0},
-  CX:{name:'Cathay Pacific', f:1.9, d:-.2},
+  AK:{name:'AirAsia', f:1.0, d:.25}, FD:{name:'Thai AirAsia', f:1.0, d:.22}, OD:{name:'Batik Air', f:1.18, d:.18},
+  FY:{name:'Firefly', f:1.1, d:.05}, MH:{name:'Malaysia Airlines', f:1.45, d:-.12}, SQ:{name:'Singapore Airlines', f:1.8, d:-.25},
+  TR:{name:'Scoot', f:1.05, d:.15}, TG:{name:'Thai Airways', f:1.5, d:-.05}, GA:{name:'Garuda Indonesia', f:1.45, d:-.05},
+  JT:{name:'Lion Air', f:.95, d:.35}, VJ:{name:'VietJet Air', f:.95, d:.3}, VN:{name:'Vietnam Airlines', f:1.35, d:-.02},
+  '5J':{name:'Cebu Pacific', f:1.0, d:.3}, PR:{name:'Philippine Airlines', f:1.4, d:0}, CX:{name:'Cathay Pacific', f:1.9, d:-.2},
 };
+const HOME = {MY:['AK','MH','OD','FY'], SG:['SQ','TR'], TH:['FD','TG'], ID:['GA','JT'], VN:['VJ','VN'], PH:['5J','PR'], HK:['CX']};
 const SLOTS = {
   morning:{label:'Morning', dep:7*60+30, f:.95, knock:.05, peak:.8},
   afternoon:{label:'Afternoon', dep:13*60+15, f:1.0, knock:.45, peak:.7},
@@ -340,12 +428,26 @@ const DELAY_COST = 80;
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const $ = s => document.querySelector(s);
-const hhmm = m => { m = ((m % 1440) + 1440) % 1440; return String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0'); };
+const hhmm = m => { m = ((Math.round(m) % 1440) + 1440) % 1440; return String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0'); };
 const opts = (obj, label, val) => Object.entries(obj).map(([k,v]) => `<option value="${k}"${k===val?' selected':''}>${label(k,v)}</option>`).join('');
 $('#from').innerHTML = opts(AIRPORTS, k=>k, 'KUL');
 $('#to').innerHTML = opts(AIRPORTS, k=>k, 'BKI');
 $('#slot').innerHTML = opts(SLOTS, (k,v)=>v.label, 'evening');
 $('#airline').innerHTML = opts(AIRLINES, (k,v)=>v.name, 'AK');
+
+/* ---------- helpers ---------- */
+const hash = str => { let h = 2166136261; for (const c of str) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
+const rng = seed => { let a = seed; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; };
+const sig = z => 1 / (1 + Math.exp(-z));
+const pct = p => Math.round(p * 100) + '%';
+const fmtDate = d => d.toLocaleDateString('en-GB', {day:'numeric', month:'short'});
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const spaced = n => Math.round(n).toLocaleString('en-US').replace(/,/g, ' ');
+const hav = (a, b) => { const R = 6371, r = Math.PI/180, dLat = (b.lat-a.lat)*r, dLon = (b.lon-a.lon)*r;
+  const h = Math.sin(dLat/2)**2 + Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLon/2)**2; return 2*R*Math.asin(Math.sqrt(h)); };
+const curve = d => { d = Math.max(0, d); if (d >= 18) return d > 50 ? 1 + (d-50)*.004 : 1; return 1 + .022 * Math.pow(18 - d, 1.2); };
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
 /* ---------- animated dropdown ---------- */
 function enhance(sel, view) {
@@ -379,134 +481,35 @@ enhance($('#from'), apView);
 enhance($('#to'), apView);
 enhance($('#airline'), (k, long) => long ? `<span>${AIRLINES[k].name}</span><small>${k}</small>` : AIRLINES[k].name);
 
-/* ---------- segmented time of day ---------- */
-const seg = $('#seg'), slotKeys = Object.keys(SLOTS);
-seg.insertAdjacentHTML('beforeend', slotKeys.map(k => `<button type="button" role="radio" data-k="${k}">${SLOTS[k].label}</button>`).join(''));
-function syncSeg() {
-  const i = slotKeys.indexOf($('#slot').value);
-  seg.style.setProperty('--i', i);
-  seg.querySelectorAll('button').forEach((b, j) => { b.setAttribute('aria-checked', j === i); b.tabIndex = j === i ? 0 : -1; });
-}
-seg.querySelectorAll('button').forEach((b, j) => {
-  b.addEventListener('click', () => { $('#slot').value = b.dataset.k; syncSeg(); update(); });
-  b.addEventListener('keydown', e => {
-    if (!['ArrowLeft','ArrowRight'].includes(e.key)) return;
-    e.preventDefault(); const n = (j + (e.key === 'ArrowRight' ? 1 : -1) + 3) % 3;
-    $('#slot').value = slotKeys[n]; syncSeg(); seg.querySelectorAll('button')[n].focus(); update();
-  });
-});
-syncSeg();
-
-/* ---------- simulated data + model ---------- */
-const hash = str => { let h = 2166136261; for (const c of str) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
-const rng = seed => { let a = seed; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; };
-const sig = z => 1 / (1 + Math.exp(-z));
-const pct = p => Math.round(p * 100) + '%';
-const fmtDate = d => d.toLocaleDateString('en-GB', {day:'numeric', month:'short'});
-const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
-const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-const spaced = n => Math.round(n).toLocaleString('en-US').replace(/,/g, ' ');
-const hav = (a, b) => { const R = 6371, r = Math.PI/180, dLat = (b.lat-a.lat)*r, dLon = (b.lon-a.lon)*r;
-  const h = Math.sin(dLat/2)**2 + Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLon/2)**2; return 2*R*Math.asin(Math.sqrt(h)); };
-const curve = d => { d = Math.max(0, d); if (d >= 18) return d > 50 ? 1 + (d-50)*.004 : 1; return 1 + .022 * Math.pow(18 - d, 1.2); };
-
-function weather(code, dateStr) {
-  const ap = AIRPORTS[code], r = rng(hash(code + dateStr)), df = .6 + .8*r();
-  return Array.from({length:24}, (_, h) => {
-    const g = Math.exp(-((h - 17) ** 2) / 18);
-    const p = Math.min(.97, Math.max(.03, ap.rain + ap.storm*g*df*.85 + (r()-.5)*.08));
-    const gust = Math.round(13 + 30*g*df + r()*6);
-    return {h, p, gust, storm: p > .55 && gust > 32};
-  });
-}
-const wxAt = (wx, min) => wx[Math.min(23, Math.max(0, Math.round(min/60)))];
-
-function delayModel(s, sl, dateStr, dur) {
-  const A = AIRPORTS[s.from], air = AIRLINES[s.airline];
-  const wxA = weather(s.from, dateStr), wxB = weather(s.to, dateStr);
-  const dw = wxAt(wxA, sl.dep), aw = wxAt(wxB, sl.dep + dur);
-  const terms = {
-    depWx: 1.6 * Math.max(0, dw.p - .25) * (dw.storm ? 1.25 : 1),
-    arrWx: 1.8 * Math.max(0, aw.p - .25) * (aw.storm ? 1.25 : 1),
-    peak: .7 * A.hub * sl.peak,
-    knock: sl.knock,
-    airline: Math.max(0, air.d),
+/* ---------- segmented control (sliding highlight) ---------- */
+function makeSeg(el, options, value, onChange, dark) {
+  el.classList.add('seg'); if (dark) el.classList.add('dark');
+  el.setAttribute('role', 'radiogroup'); el.style.setProperty('--n', options.length);
+  el.innerHTML = '<span class="seg-ind" aria-hidden="true"></span>' + options.map(o => `<button type="button" role="radio" data-k="${o.k}">${o.label}</button>`).join('');
+  const btns = [...el.querySelectorAll('button')];
+  const set = (k, fire) => {
+    const i = Math.max(0, options.findIndex(o => o.k === k));
+    el.style.setProperty('--i', i);
+    btns.forEach((b, j) => { b.setAttribute('aria-checked', j === i); b.tabIndex = j === i ? 0 : -1; });
+    if (fire) onChange(options[i].k);
   };
-  const z = -3.1 + Object.values(terms).reduce((a,b)=>a+b, 0) + Math.min(0, air.d);
-  return {wxA, wxB, dw, aw, terms, z, p: sig(z)};
+  btns.forEach((b, j) => {
+    b.addEventListener('click', () => set(b.dataset.k, true));
+    b.addEventListener('keydown', e => {
+      if (!['ArrowLeft','ArrowRight'].includes(e.key)) return;
+      e.preventDefault(); const n = (j + (e.key === 'ArrowRight' ? 1 : -1) + options.length) % options.length;
+      set(options[n].k, true); btns[n].focus();
+    });
+  });
+  set(value, false);
+  return {set};
 }
-
-function evalFlight(s, slotKey) {
-  const A = AIRPORTS[s.from], B = AIRPORTS[s.to], air = AIRLINES[s.airline], sl = SLOTS[slotKey];
-  const km = hav(A, B), dur = Math.round((km/780*60 + 30)/5)*5;
-  const dm = delayModel(s, sl, s.date, dur);
-  const contrib = {}; for (const k in dm.terms) contrib[k] = Math.max(0, dm.p - sig(dm.z - dm.terms[k]));
-  const base = (69 + .135*km + (A.cc !== B.cc ? 45 : 0)) * air.f * sl.f;
-  const fare = d => Math.round(base * curve(d));
-  const h = hash(s.from + s.to + slotKey + s.airline);
-  const flightNo = s.airline + ' ' + (s.airline === 'AK' ? 5000 + h % 2000 : 100 + h % 900);
-  return {slotKey, sl, km, dur, dep: sl.dep, arr: sl.dep + dur, ...dm, contrib, fare, flightNo,
-    total: fare(s.days) + dm.p * DELAY_COST};
-}
-
-function history(s, f) {
-  let d = addDays(TODAY, -1); while (d.getDay() !== s.dt.getDay()) d = addDays(d, -1);
-  const out = [];
-  for (let k = 11; k >= 0; k--) {
-    const day = addDays(d, -7*k), dm = delayModel(s, f.sl, iso(day), f.dur), r = rng(hash(f.flightNo + iso(day)));
-    const late = r() < dm.p;
-    const mins = late ? Math.round(31 + Math.pow(r(), 1.8) * 95) : Math.round(r() * 22);
-    const top = Object.entries(dm.terms).sort((a,b) => b[1]-a[1])[0][0];
-    const cause = {depWx:'Weather', arrWx:'Weather', peak:'Busy airport', knock:'Late aircraft', airline:'Airline ops'}[top];
-    out.push({day, mins, late, cause});
-  }
-  return out;
-}
-
-function readState() {
-  const date = $('#date').value, [y, m, d] = date.split('-').map(Number), dt = new Date(y, m-1, d);
-  return {from:$('#from').value, to:$('#to').value, date, dt, days: Math.round((dt - TODAY)/86400000),
-    slot:$('#slot').value, airline:$('#airline').value, price: Math.max(1, +$('#price').value || 0)};
-}
-
-function build(s) {
-  const cur = evalFlight(s, s.slot);
-  const alts = slotKeys.map(k => evalFlight(s, k));
-  const best = alts.slice().sort((a,b) => a.total - b.total)[0], hist = history(s, cur), lateN = hist.filter(h => h.late).length;
-  const fair = cur.fare(s.days), ratio = s.price / fair;
-  const rise = s.days >= 8 ? cur.fare(s.days - 7) - fair : 0;
-  const savings = Math.round(cur.total - best.total);
-  const sw = best.slotKey !== s.slot && savings >= 25 ? best : null;
-
-  // sub line colour follows its category: high = red, fair = yellow, good = green
-  const priceCls = ratio > 1.08 ? 'bad' : ratio < .92 ? 'good' : 'warn';
-  let action, sub, subCls;
-  if (ratio > 1.12 && s.days > 7) { action = 'Wait'; sub = `Price is ${Math.round((ratio-1)*100)}% too high`; subCls = 'bad'; }
-  else if (s.days > 24) { action = 'Wait'; sub = `Price stays flat until ${fmtDate(addDays(s.dt, -20))}`; subCls = priceCls; }
-  else if (rise > 0) { action = 'Book now'; sub = `Price goes up RM ${rise} next week`; subCls = rise/fair > .1 ? 'bad' : 'warn'; }
-  else { action = 'Book now'; sub = 'Price won\'t drop'; subCls = priceCls; }
-  let big = action;
-  if (sw) { const w = sw.sl.label.toLowerCase(); big = action === 'Book now' ? `Book the ${w} flight` : `Wait, then book ${w}`;
-    sub = `Save RM ${savings} · delay risk ${pct(sw.p)} instead of ${pct(cur.p)}`; subCls = 'good'; }
-
-  const reasons = [];
-  const lvl = v => v >= .15 ? 'bad' : v >= .06 ? 'warn' : 'good';
-  if (cur.contrib.depWx > .03) reasons.push({t:`${cur.dw.storm ? 'Storm' : 'Rain'} at ${s.from}, ${hhmm(cur.dep)}`, n:cur.contrib.depWx});
-  if (cur.contrib.arrWx > .03) reasons.push({t:`${cur.aw.storm ? 'Storm' : 'Rain'} at ${s.to}, ${hhmm(cur.arr)}`, n:cur.contrib.arrWx});
-  if (cur.contrib.peak > .03) reasons.push({t:`Peak hour at ${s.from}`, n:cur.contrib.peak});
-  if (cur.contrib.knock > .03) reasons.push({t:'Late-day flight', n:cur.contrib.knock});
-  reasons.sort((a,b) => b.n - a.n); reasons.splice(3);
-  reasons.forEach(r => { r.v = `+${pct(r.n)}`; r.l = lvl(r.n); });
-  reasons.push({t:'Late in last 12 weeks', v:`${lateN} of 12`, l: lateN >= 5 ? 'bad' : lateN >= 3 ? 'warn' : 'good'});
-  if (rise > 0) reasons.push({t:'Price in 7 days', v:`+RM ${rise}`, l: rise/fair > .1 ? 'bad' : 'warn'});
-  if (ratio > 1.08) reasons.push({t:'Above fair price', v:`+RM ${s.price - fair}`, l:'bad'});
-
-  return {s, cur, alts, best, hist, lateN, fair, ratio, rise, big, sub, subCls, reasons};
-}
+const slotKeys = Object.keys(SLOTS);
+const segDep = makeSeg($('#seg'), slotKeys.map(k => ({k, label:SLOTS[k].label})), 'evening', k => { $('#slot').value = k; update({resetPrice: true}); });
 
 /* ---------- animated calendar picker ---------- */
 function datePicker(input) {
-  const MIN = TODAY, MAX = addDays(TODAY, 60);
+  const MIN = TODAY, MAX = addDays(TODAY, 90);
   const wrap = document.createElement('div'); wrap.className = 'dd dp';
   wrap.innerHTML = `<button type="button" class="ctl dd-btn" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="dateLab dateVal">
       <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span class="v" id="dateVal"></span><i class="chev" aria-hidden="true"></i></button>
@@ -514,6 +517,7 @@ function datePicker(input) {
       <div class="cal-head"><button type="button" class="cal-nav" data-d="-1" aria-label="Previous month">‹</button><b aria-live="polite"></b><button type="button" class="cal-nav" data-d="1" aria-label="Next month">›</button></div>
       <div class="cal-wd">${['Mo','Tu','We','Th','Fr','Sa','Su'].map(d => `<span>${d}</span>`).join('')}</div>
       <div class="cal-grid"></div>
+      <div class="cal-foot"><span><i class="lo"></i>Cheap</span><span><i class="hi"></i>Pricey</span><span><i class="hol"></i>Holiday</span><span class="muted">Lowest RM / day</span></div>
     </div>`;
   input.after(wrap);
   const btn = wrap.querySelector('.dd-btn'), panel = wrap.querySelector('.cal'), head = wrap.querySelector('.cal-head b'), grid = wrap.querySelector('.cal-grid'), navs = wrap.querySelectorAll('.cal-nav');
@@ -525,9 +529,13 @@ function datePicker(input) {
     head.textContent = view.toLocaleDateString('en-GB', {month:'long', year:'numeric'});
     const y = view.getFullYear(), mo = view.getMonth(), first = (view.getDay() + 6) % 7, n = new Date(y, mo + 1, 0).getDate();
     let h = '<span></span>'.repeat(first);
+    const st = {from:$('#from').value, to:$('#to').value, airline:$('#airline').value};
+    const all = []; for (let k = 0; k <= 90; k++) all.push(cheapestOn(st, iso(addDays(TODAY, k)), k));
+    const sorted = all.slice().sort((a, b) => a - b), p33 = sorted[30], p66 = sorted[60];
     for (let d = 1; d <= n; d++) {
-      const dt = new Date(y, mo, d), v = iso(dt), off = dt < MIN || dt > MAX;
-      h += `<button type="button" data-v="${v}"${off ? ' disabled' : ''} aria-pressed="${v === input.value}" class="${v === iso(TODAY) ? 'is-today' : ''}" aria-label="${dt.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long'})}">${d}</button>`;
+      const dt = new Date(y, mo, d), v = iso(dt), off = dt < MIN || dt > MAX, k = Math.round((dt - TODAY) / 86400000);
+      const pr = off ? null : all[k], cls = pr == null ? '' : pr <= p33 ? 'lo' : pr >= p66 ? 'hi' : 'mid', hol = holidayOn(v);
+      h += `<button type="button" data-v="${v}"${off ? ' disabled' : ''} aria-pressed="${v === input.value}" class="${v === iso(TODAY) ? 'is-today' : ''}${hol ? ' is-hol' : ''}" aria-label="${dt.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long'})}${pr ? `, from RM ${pr}` : ''}${hol ? `, ${hol.label}` : ''}"><span class="dn">${d}</span>${pr ? `<span class="dpp ${cls}">${pr}</span>` : ''}</button>`;
     }
     grid.innerHTML = h;
     navs[0].disabled = view <= monthOf(MIN); navs[1].disabled = view >= monthOf(MAX);
@@ -555,8 +563,8 @@ function datePicker(input) {
   grid.addEventListener('keydown', e => {
     const step = {ArrowLeft:-1, ArrowRight:1, ArrowUp:-7, ArrowDown:7}[e.key]; if (!step) return;
     e.preventDefault();
-    const cur = document.activeElement?.dataset?.v; if (!cur) return;
-    const next = addDays(parse(cur), step); if (next < MIN || next > MAX) return;
+    const curV = document.activeElement?.dataset?.v; if (!curV) return;
+    const next = addDays(parse(curV), step); if (next < MIN || next > MAX) return;
     const nm = monthOf(next); if (+nm !== +view) { const dir = nm > view ? 1 : -1; view = nm; draw(dir); }
     focusDay(iso(next));
   });
@@ -586,9 +594,8 @@ datePicker($('#date'));
     build(); act = -1; wrap.classList.add('open'); input.setAttribute('aria-expanded', 'true');
   };
   const close = () => { wrap.classList.remove('open'); input.setAttribute('aria-expanded', 'false'); };
-  const pick = v => { input.value = v; close(); input.focus(); update(); };
+  const pick = v => { input.value = v; close(); update(); };
   wrap.close = close;
-  input.addEventListener('focus', open);
   input.addEventListener('click', open);
   input.addEventListener('input', close);
   input.addEventListener('keydown', e => {
@@ -597,6 +604,162 @@ datePicker($('#date'));
     else if (e.key === 'Escape' || e.key === 'Tab') close();
   });
 })();
+
+/* ---------- simulated data + model ---------- */
+function weather(code, dateStr) {
+  const ap0 = AIRPORTS[code], mo = +dateStr.slice(5, 7), north = ap0.lat > 18;
+  const sea = north ? ({10:.8, 11:.6, 12:.5, 1:.5}[mo] || 1) : ({10:1, 11:1.1, 12:1.15, 1:1.05}[mo] || 1);
+  const ap = {...ap0, storm: ap0.storm * sea, rain: ap0.rain * sea}, r = rng(hash(code + dateStr)), df = .6 + .8*r();
+  return Array.from({length:24}, (_, h) => {
+    const g = Math.exp(-((h - 17) ** 2) / 18);
+    const p = Math.min(.97, Math.max(.03, ap.rain + ap.storm*g*df*.85 + (r()-.5)*.08));
+    const gust = Math.round(13 + 30*g*df + r()*6);
+    return {h, p, gust, storm: p > .55 && gust > 32};
+  });
+}
+const wxAt = (wx, min) => wx[Math.min(23, Math.max(0, Math.round(min/60)))];
+const wxLerp = (wx, h) => { const a = Math.floor(h) % 24, b = (a + 1) % 24, t = h - Math.floor(h); return wx[a].p * (1 - t) + wx[b].p * t; };
+
+function delayModel(s, sl, dateStr, dur, airline, dep) {
+  const A = AIRPORTS[s.from], air = AIRLINES[airline];
+  const wxA = weather(s.from, dateStr), wxB = weather(s.to, dateStr);
+  const dw = wxAt(wxA, dep), aw = wxAt(wxB, dep + dur);
+  const terms = {
+    depWx: 1.6 * Math.max(0, dw.p - .25) * (dw.storm ? 1.25 : 1),
+    arrWx: 1.8 * Math.max(0, aw.p - .25) * (aw.storm ? 1.25 : 1),
+    peak: .7 * A.hub * sl.peak * (holidayOn(dateStr) ? 1.3 : 1),
+    knock: sl.knock,
+    airline: Math.max(0, air.d),
+  };
+  const z = -3.1 + Object.values(terms).reduce((a,b)=>a+b, 0) + Math.min(0, air.d);
+  return {wxA, wxB, dw, aw, terms, z, p: sig(z)};
+}
+
+const HOLIDAYS = [
+  {from:'2026-11-06', to:'2026-11-09', label:'Deepavali', f:1.35},
+  {from:'2026-12-19', to:'2027-01-03', label:'Year-end holidays', f:1.22},
+  {from:'2026-12-23', to:'2026-12-26', label:'Christmas', f:1.4},
+  {from:'2026-12-30', to:'2027-01-02', label:'New Year', f:1.38},
+];
+const holidayOn = dateStr => HOLIDAYS.filter(x => dateStr >= x.from && dateStr <= x.to).sort((a, b) => b.f - a.f)[0] || null;
+const DOW = [1.12, .97, .9, .92, 1.0, 1.15, 1.04];  // Sun..Sat: Fri and Sun busiest, Tue/Wed cheapest
+function dateMult(s, dateStr, airline, slotKey) {
+  const [y, mo, d] = dateStr.split('-').map(Number), dt = new Date(y, mo - 1, d), hol = holidayOn(dateStr);
+  const r = rng(hash(airline + s.from + s.to + dateStr + slotKey)), budget = AIRLINES[airline].f <= 1.05;
+  let m = DOW[dt.getDay()] * (hol ? hol.f : 1) * (1 + (r() - .5) * .2), promo = false;
+  if (!hol && r() < (budget ? .16 : .06)) { m *= budget ? .7 : .85; promo = true; }   // seat sale on this flight
+  if (hol && r() < .3) m *= 1.15;                                                      // nearly sold out
+  return {m, promo, hol};
+}
+function fareFor(s, slotKey, airline) {
+  const A = AIRPORTS[s.from], B = AIRPORTS[s.to], km = hav(A, B), dm = dateMult(s, s.date, airline, slotKey);
+  const base = (69 + .135*km + (A.cc !== B.cc ? 45 : 0)) * AIRLINES[airline].f * SLOTS[slotKey].f * dm.m;
+  return {fare: d => Math.round(base * curve(d)), promo: dm.promo, hol: dm.hol, km};
+}
+function evalFlight(s, slotKey, airline = s.airline) {
+  const sl = SLOTS[slotKey], ff = fareFor(s, slotKey, airline), km = ff.km, dur = Math.round((km/780*60 + 30)/5)*5;
+  const h = hash(s.from + s.to + slotKey + airline);
+  const dep = sl.dep + ((h % 5) - 2) * 15;
+  const dm = delayModel(s, sl, s.date, dur, airline, dep);
+  const contrib = {}; for (const k in dm.terms) contrib[k] = Math.max(0, dm.p - sig(dm.z - dm.terms[k]));
+  const flightNo = (airline === '5J' ? '5J' : airline) + ' ' + (airline === 'AK' ? 5000 + h % 2000 : 100 + h % 900);
+  return {slotKey, sl, airline, km, dur, dep, arr: dep + dur, ...dm, contrib, fare: ff.fare, promo: ff.promo, hol: ff.hol, flightNo};
+}
+// cheapest fare on a date across the route's airlines and times (for the calendar)
+function cheapestOn(s, dateStr, days) {
+  const s2 = {...s, date: dateStr, days};
+  let best = Infinity;
+  for (const c of carriers(s2)) for (const k of slotKeys) best = Math.min(best, fareFor(s2, k, c).fare(days));
+  return best;
+}
+
+// airlines that plausibly fly this route: yours first, then home carriers of both countries
+// airlines that fly this route: a fixed set per route, plus yours if it's not in it
+function carriers(s) {
+  const key = [s.from, s.to].sort().join('');
+  const pool = [...new Set([...(HOME[AIRPORTS[s.from].cc] || []), ...(HOME[AIRPORTS[s.to].cc] || [])])];
+  pool.sort((a, b) => hash(key + a) - hash(key + b));
+  const set = pool.slice(0, 4);
+  return set.includes(s.airline) ? set : [s.airline, ...set];
+}
+
+function history(s, f, weeks) {
+  let d = addDays(TODAY, -1); while (d.getDay() !== s.dt.getDay()) d = addDays(d, -1);
+  const out = [];
+  for (let k = weeks - 1; k >= 0; k--) {
+    const day = addDays(d, -7*k), dm = delayModel(s, f.sl, iso(day), f.dur, f.airline, f.dep), r = rng(hash(f.flightNo + iso(day)));
+    const late = r() < dm.p;
+    const mins = late ? Math.round(31 + Math.pow(r(), 1.8) * 95) : Math.round(r() * 22);
+    const cancelled = r() < .02 + dm.p * .03;
+    const top = Object.entries(dm.terms).sort((a,b) => b[1]-a[1])[0][0];
+    const cause = {depWx:'wx', arrWx:'wx', peak:'busy', knock:'late', airline:'ops'}[top];
+    out.push({day, mins, late: late || cancelled, cancelled, cause});
+  }
+  return out;
+}
+const CAUSE = {wx:'Weather', busy:'Busy airport', late:'Late aircraft', ops:'Airline ops'};
+
+function readState() {
+  const date = $('#date').value, [y, m, d] = date.split('-').map(Number), dt = new Date(y, m-1, d);
+  return {from:$('#from').value, to:$('#to').value, date, dt, days: Math.round((dt - TODAY)/86400000),
+    slot:$('#slot').value, airline:$('#airline').value, price: Math.max(1, +$('#price').value || 0)};
+}
+
+function build(s) {
+  const cur = evalFlight(s, s.slot);
+  // every option that day: 3 times x up to 3 airlines; yours is priced at what you see
+  const flights = [];
+  carriers(s).forEach(c => slotKeys.forEach(k => flights.push(k === s.slot && c === s.airline ? cur : evalFlight(s, k, c))));
+  flights.forEach(f => { f.price = f === cur ? s.price : f.fare(s.days); f.total = f.price + f.p * DELAY_COST; });
+  const best = flights.slice().sort((a, b) => a.total - b.total)[0];
+  const hist = history(s, cur, 26), last12 = hist.slice(-12), lateN = last12.filter(h => h.late).length;
+  const fair = cur.fare(s.days), ratio = s.price / fair;
+  const rise = s.days >= 8 ? cur.fare(s.days - 7) - fair : 0;
+  const savings = Math.round(cur.total - best.total);
+  const sw = best !== cur && savings >= 25 ? best : null;
+
+  const priceCls = ratio > 1.08 ? 'bad' : ratio < .92 ? 'good' : 'warn';
+  let action, sub, subCls;
+  if (ratio > 1.12 && s.days > 7) { action = 'Wait'; sub = `Price is ${Math.round((ratio-1)*100)}% too high`; subCls = 'bad'; }
+  else if (cur.hol) { action = 'Book now'; sub = `${cur.hol.label} rush: fares only go up`; subCls = 'warn'; }
+  else if (s.days > 24) { action = 'Wait'; sub = `Price stays flat until ${fmtDate(addDays(s.dt, -20))}`; subCls = priceCls; }
+  else if (rise > 0) { action = 'Book now'; sub = `Price goes up RM ${rise} next week`; subCls = rise/fair > .1 ? 'bad' : 'warn'; }
+  else { action = 'Book now'; sub = 'Price won\'t drop'; subCls = priceCls; }
+  let big = action;
+  if (sw) {
+    const what = sw.airline === s.airline ? `the ${sw.sl.label.toLowerCase()} flight` : `${AIRLINES[sw.airline].name}, ${sw.sl.label.toLowerCase()}`;
+    big = action === 'Book now' ? `Book ${what}` : `Wait, then book ${what}`;
+    sub = `Save RM ${savings} · delay risk ${pct(sw.p)} instead of ${pct(cur.p)}`; subCls = 'good';
+  }
+
+  // each reason carries a next move; some moves can be applied with one tap
+  const safest = flights.filter(f => f.airline === s.airline).sort((a, b) => a.p - b.p)[0];
+  const canSwitch = safest.slotKey !== s.slot && cur.p - safest.p >= .08;
+  const switchMove = canSwitch ? {a:`Take the ${safest.sl.label.toLowerCase()} flight (${pct(safest.p)} risk)`, act:`slot:${safest.slotKey}:${safest.price}`, btn:'Switch'} : null;
+  const reasons = [];
+  const lvl = v => v >= .15 ? 'bad' : v >= .06 ? 'warn' : 'good';
+  if (cur.contrib.depWx > .03) reasons.push({t:`${cur.dw.storm ? 'Storm' : 'Rain'} at ${s.from}, ${hhmm(cur.dep)}`, n:cur.contrib.depWx,
+    a:'Get to the airport early; boarding may slow'});
+  if (cur.contrib.arrWx > .03) reasons.push({t:`${cur.aw.storm ? 'Storm' : 'Rain'} at ${s.to}, ${hhmm(cur.arr)}`, n:cur.contrib.arrWx,
+    a:'Plan a flexible pickup on arrival'});
+  if (cur.contrib.peak > .03) reasons.push({t:`Peak hour at ${s.from}`, n:cur.contrib.peak,
+    a:'Check in online to skip queues'});
+  if (cur.contrib.knock > .03) reasons.push({t:'Late-day flight', n:cur.contrib.knock,
+    a:'See which hours run on time', act:'tab:best', btn:'Show'});
+  reasons.sort((a,b) => b.n - a.n); reasons.splice(3);
+  reasons.forEach(r => { r.v = `+${pct(r.n)}`; r.l = lvl(r.n); });
+  if (switchMove && reasons.length) Object.assign(reasons[0], switchMove);  // the biggest delay cause gets the one-tap fix
+  reasons.push({t:'Late in last 12 weeks', v:`${lateN} of 12`, l: lateN >= 5 ? 'bad' : lateN >= 3 ? 'warn' : 'good',
+    a: lateN >= 5 ? 'Avoid connections under 3 h' : lateN >= 3 ? 'Leave 2 h for any connection' : 'Reliable flight, no action needed',
+    ...(lateN >= 3 ? {act:'tab:delays', btn:'History'} : {})});
+  if (cur.hol) reasons.push({t:`${cur.hol.label} demand`, v:`+${Math.round((cur.hol.f - 1) * 100)}%`, l:'warn', a:'Book soon; seats sell out fast', act:'tab:price', btn:'Trend'});
+  if (rise > 0) reasons.push({t:'Price in 7 days', v:`+RM ${rise}`, l: rise/fair > .1 ? 'bad' : 'warn',
+    a: s.days > 24 ? `Book before ${fmtDate(addDays(s.dt, -20))}` : 'Book in the next 2 days', act:'tab:price', btn:'Trend'});
+  if (ratio > 1.08) reasons.push({t:'Above fair price', v:`+RM ${s.price - fair}`, l:'bad',
+    a:`Aim for RM ${fair} or compare airlines`, act:'sort:price', btn:'Cheapest'});
+
+  return {s, cur, flights, best: sw || cur, hist, lateN, fair, ratio, rise, big, sub, subCls, reasons};
+}
 
 /* ---------- number tween ---------- */
 const prevNums = {};
@@ -608,7 +771,19 @@ function tween(el, key, to, fmt) {
   requestAnimationFrame(step);
 }
 
-let tab = 'price', model = null;
+let tab = 'price', model = null, flightSort = 'best', showAll = false, histWeeks = 26, wxLayer = 'rain';
+
+const PLANE_SVG = `<svg viewBox="0 0 64 64" aria-hidden="true">
+  <defs><linearGradient id="planeBody" x1="0" x2="1"><stop offset="0" stop-color="#d9e1ee"/><stop offset=".5" stop-color="#ffffff"/><stop offset="1" stop-color="#c3cddd"/></linearGradient></defs>
+  <g fill="url(#planeBody)" stroke="rgba(20,30,60,.4)" stroke-width=".6" stroke-linejoin="round">
+    <path d="M35.5 24 L61 37 L61 40.5 L35.5 34 Z"/><path d="M28.5 24 L3 37 L3 40.5 L28.5 34 Z"/>
+    <path d="M35 51 L45 57 L45 59.5 L34.5 56 Z"/><path d="M29 51 L19 57 L19 59.5 L29.5 56 Z"/>
+    <rect x="41.5" y="27.5" width="4.5" height="9" rx="2.2"/><rect x="18" y="27.5" width="4.5" height="9" rx="2.2"/>
+    <path d="M32 2 C34.6 2 35.6 5.5 35.6 9.5 L35.6 50 C35.6 54.5 34 59.5 32 62 C30 59.5 28.4 54.5 28.4 50 L28.4 9.5 C28.4 5.5 29.4 2 32 2 Z"/>
+  </g>
+  <rect x="31.25" y="13" width="1.5" height="34" rx=".75" fill="#8b5cf6" opacity=".75"/>
+  <path d="M30.4 7.2 Q32 5.8 33.6 7.2 L33.3 8.8 Q32 8 30.7 8.8 Z" fill="#1b2540"/>
+</svg>`;
 
 function render(m) {
   const {s, cur} = m;
@@ -623,11 +798,11 @@ function render(m) {
         <p class="label">Flymate says</p>
         <h1 class="big">${m.big}</h1>
         <p class="sub tone-${m.subCls}">${m.sub}</p>
-        <div class="flight">${cur.flightNo} · ${s.from} ${hhmm(cur.dep)} → ${s.to} ${hhmm(cur.arr)} · ${fmtDate(s.dt)}</div>
+        <div class="flight">${cur.flightNo} · ${s.from} ${hhmm(cur.dep)} → ${s.to} ${hhmm(cur.arr)} · ${fmtDate(s.dt)}${cur.hol ? ` · <b class="hol-chip">${cur.hol.label}</b>` : ''}</div>
       </div>
       <div class="stats">
         <div class="stat"><p class="label">Delay risk</p><div class="num tone-${dCls}" id="nDelay"></div><span class="pill ${dCls}">${dWord}</span></div>
-        <div class="stat"><p class="label">Fair price</p><div class="num tone-${pCls}" id="nFair"></div><span class="pill ${pCls}">You: RM ${s.price} · ${pWord}</span></div>
+        <div class="stat"><p class="label">Fair price</p><div class="num tone-${pCls}" id="nFair"></div><span class="pill ${pCls}">${m.ratio > 1.08 ? `You: RM ${s.price - m.fair} above` : m.ratio < .92 ? `You: RM ${m.fair - s.price} below` : `You: RM ${s.price}`} · ${pWord}</span></div>
         <div class="stat"><p class="label">In 7 days</p><div class="num tone-${rCls}" id="nRise"></div><span class="pill ${rCls}">${m.rise > 0 ? '+' + Math.round(m.rise/m.fair*100) + '%' : 'No change'}</span></div>
       </div>
     </section>
@@ -643,17 +818,7 @@ function render(m) {
         </div>
         <div class="trk-label" id="lFrom"><b>${AIRPORTS[s.from].name}</b><span>Departure ${hhmm(cur.dep)}</span></div>
         <div class="trk-label" id="lTo"><b>${AIRPORTS[s.to].name}</b><span>Arrival ${hhmm(cur.arr)}</span></div>
-        <div class="trk-plane" id="plane"><svg viewBox="0 0 64 64" aria-hidden="true">
-          <defs><linearGradient id="planeBody" x1="0" x2="1"><stop offset="0" stop-color="#d9e1ee"/><stop offset=".5" stop-color="#ffffff"/><stop offset="1" stop-color="#c3cddd"/></linearGradient></defs>
-          <g fill="url(#planeBody)" stroke="rgba(20,30,60,.4)" stroke-width=".6" stroke-linejoin="round">
-            <path d="M35.5 24 L61 37 L61 40.5 L35.5 34 Z"/><path d="M28.5 24 L3 37 L3 40.5 L28.5 34 Z"/>
-            <path d="M35 51 L45 57 L45 59.5 L34.5 56 Z"/><path d="M29 51 L19 57 L19 59.5 L29.5 56 Z"/>
-            <rect x="41.5" y="27.5" width="4.5" height="9" rx="2.2"/><rect x="18" y="27.5" width="4.5" height="9" rx="2.2"/>
-            <path d="M32 2 C34.6 2 35.6 5.5 35.6 9.5 L35.6 50 C35.6 54.5 34 59.5 32 62 C30 59.5 28.4 54.5 28.4 50 L28.4 9.5 C28.4 5.5 29.4 2 32 2 Z"/>
-          </g>
-          <rect x="31.25" y="13" width="1.5" height="34" rx=".75" fill="#8b5cf6" opacity=".75"/>
-          <path d="M30.4 7.2 Q32 5.8 33.6 7.2 L33.3 8.8 Q32 8 30.7 8.8 Z" fill="#1b2540"/>
-        </svg></div>
+        <div class="trk-plane" id="plane">${PLANE_SVG}</div>
       </div>
       <div class="trk-bottom">
         <div class="ring">
@@ -669,16 +834,38 @@ function render(m) {
       </div>
     </section>
 
+    <section class="wx fade" aria-label="Weather map">
+      <div class="wx-head">
+        <div><div class="wx-title">Weather</div><div class="wx-sub">${fmtDate(s.dt)} · ${s.from} → ${s.to}</div></div>
+        <div id="wxLayer" aria-label="Map layer"></div>
+      </div>
+      <div class="wx-map" id="wxMap">
+        <canvas id="wxCanvas" aria-hidden="true"></canvas>
+        <div class="wx-tip" id="wxTip" hidden></div>
+      </div>
+      <div class="wx-ctrl">
+        <button type="button" class="play" id="wxPlay" aria-label="Pause"><svg viewBox="0 0 24 24" aria-hidden="true"><path id="wxPlayIco" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg></button>
+        <div class="wx-time" id="wxTime">00:00</div>
+        <div class="wx-slider">
+          <input type="range" id="wxHour" min="0" max="23.9" step="0.1" value="0" aria-label="Hour of day">
+          ${cur.arr - cur.dep < 150 ? `<span class="wx-mark" style="left:${Math.min(cur.dep, 1439) / 1440 * 100}%">Your flight</span>` :
+          `<span class="wx-mark" style="left:${Math.min(cur.dep, 1439) / 1440 * 100}%">Takeoff</span><span class="wx-mark" style="left:${Math.min(cur.arr, 1439) / 1440 * 100}%">Landing</span>`}
+        </div>
+      </div>
+      <div class="wx-legend"><span id="wxLo"></span><i class="wx-bar" id="wxBar"></i><span id="wxHi"></span></div>
+    </section>
+
     <div class="two fade">
-      <section class="card panel"><h2>Why</h2>
-        <ul class="rows">${m.reasons.map(r => `<li><span class="why"><i class="${r.l}"></i>${r.t}</span><span class="val">${r.v}</span></li>`).join('')}</ul>
+      <section class="card panel"><h2>Why · what to do</h2>
+        <ul class="rows">${m.reasons.map(r => `<li>
+          <div class="why-row"><span class="why"><i class="${r.l}"></i>${r.t}</span><span class="val">${r.v}</span></div>
+          <div class="move"><span class="move-t">→ ${r.a}</span>${r.act ? `<button type="button" class="move-btn" data-act="${r.act}">${r.btn}</button>` : ''}</div>
+        </li>`).join('')}</ul>
       </section>
-      <section class="card panel"><h2>Flights that day</h2>
-        <div class="opthead"><span>When</span><span>Price</span><span>Delay</span></div>
-        ${m.alts.map(a => `<button type="button" class="opt" data-slot="${a.slotKey}">
-          <span class="when">${a.sl.label} <small>${hhmm(a.dep)}</small>${a === m.best ? '<span class="tag">Best</span>' : ''}${a.slotKey === s.slot ? '<span class="tag you">Yours</span>' : ''}</span>
-          <span class="val">RM ${a.fare(s.days)}</span>
-          <span class="val r">${pct(a.p)}</span></button>`).join('')}
+      <section class="card panel">
+        <div class="phead"><h2>Flights that day</h2><div id="sortSeg" aria-label="Sort flights"></div></div>
+        <div class="opthead"><span>Flight</span><span>Price</span><span>Delay</span></div>
+        <div id="flightRows"></div>
       </section>
     </div>
 
@@ -686,10 +873,10 @@ function render(m) {
       <div class="chead">
         <div class="tabs" role="tablist"><span class="tab-ind" aria-hidden="true"></span>
           <button role="tab" data-tab="price">Price</button>
-          <button role="tab" data-tab="delays">Delay history</button>
-          <button role="tab" data-tab="weather">Weather</button>
+          <button role="tab" data-tab="delays">Delays</button>
+          <button role="tab" data-tab="best">Best time</button>
         </div>
-        <span class="cnote" id="cnote"></span>
+        <div class="copt"><span class="cnote" id="cnote"></span><div id="chartOpt"></div></div>
       </div>
       <div class="chart" id="chart" role="tabpanel"></div>
       <div class="legend" id="legend"></div>
@@ -700,9 +887,37 @@ function render(m) {
   tween($('#nFair'), 'fair', m.fair, v => '<small>RM</small>' + Math.round(v));
   if (m.rise > 0) tween($('#nRise'), 'rise', m.rise, v => '<small>+RM</small>' + Math.round(v)); else { $('#nRise').textContent = 'Flat'; prevNums.rise = 0; }
 
-  document.querySelectorAll('.opt').forEach(b => b.addEventListener('click', () => { $('#slot').value = b.dataset.slot; syncSeg(); update(); }));
+  makeSeg($('#sortSeg'), [{k:'best', label:'Best'}, {k:'price', label:'Cheapest'}, {k:'delay', label:'On time'}], flightSort, k => { flightSort = k; drawFlights(); });
+  drawFlights();
+  document.querySelectorAll('.move-btn').forEach(b => b.addEventListener('click', () => {
+    const [kind, val] = b.dataset.act.split(':'), smooth = reduced ? 'auto' : 'smooth';
+    if (kind === 'slot') { $('#slot').value = val; segDep.set(val); $('#price').value = b.dataset.act.split(':')[2]; update(); window.scrollTo({top: 0, behavior: smooth}); }
+    else if (kind === 'sort') { flightSort = val; showAll = true; makeSeg($('#sortSeg'), [{k:'best', label:'Best'}, {k:'price', label:'Cheapest'}, {k:'delay', label:'On time'}], flightSort, k => { flightSort = k; drawFlights(); }); drawFlights(); $('#flightRows').scrollIntoView({behavior: smooth, block: 'center'}); }
+    else if (kind === 'tab') { tab = val; syncTabs(); drawChart(); $('#chart').scrollIntoView({behavior: smooth, block: 'center'}); }
+  }));
   document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => { tab = b.dataset.tab; syncTabs(); drawChart(); }));
-  syncTabs(); drawChart(); initTracker(m);
+  syncTabs(); drawChart(); initTracker(m); initRadar(m);
+}
+
+function drawFlights() {
+  const {s, flights, best} = model;
+  const key = {best: f => f.total, price: f => f.price, delay: f => f.p}[flightSort];
+  const list = flights.slice().sort((a, b) => key(a) - key(b));
+  const shown = showAll ? list : list.slice(0, 5);
+  const box = $('#flightRows');
+  box.innerHTML = shown.map(f => {
+    const yours = f.slotKey === s.slot && f.airline === s.airline;
+    const dc = f.p >= .45 ? 'bad' : f.p >= .2 ? 'warn' : 'good';
+    return `<button type="button" class="opt" data-slot="${f.slotKey}" data-air="${f.airline}" data-price="${f.price}">
+      <span class="when"><span class="w1">${hhmm(f.dep)} <small>${AIRLINES[f.airline].name}</small></span>${f === best ? '<span class="tag">Best</span>' : ''}${f.promo ? '<span class="tag sale">Sale</span>' : ''}${yours ? '<span class="tag you">Yours</span>' : ''}</span>
+      <span class="val">RM ${f.price}</span>
+      <span class="val r tone-${dc}">${pct(f.p)}</span></button>`;
+  }).join('') + (list.length > 5 ? `<button type="button" class="more" id="moreBtn">${showAll ? 'Show less' : `Show all ${list.length}`}</button>` : '');
+  box.querySelectorAll('.opt').forEach(b => b.addEventListener('click', () => {
+    $('#slot').value = b.dataset.slot; segDep.set(b.dataset.slot);
+    $('#airline').value = b.dataset.air; $('#airline').sync(); $('#price').value = b.dataset.price; update();
+  }));
+  $('#moreBtn')?.addEventListener('click', () => { showAll = !showAll; drawFlights(); });
 }
 
 function syncTabs() {
@@ -712,43 +927,43 @@ function syncTabs() {
   if (b && ind) { ind.style.width = b.offsetWidth + 'px'; ind.style.transform = `translateX(${b.offsetLeft}px)`; }
 }
 
-/* ---------- tracker: dot-matrix map, arc, plane ---------- */
+/* ---------- shared land shapes (rough coastlines) ---------- */
 const LAND = [
-  [[92,23],[92.3,21],[93.6,19.5],[94.4,18],[94.2,16],[95.3,15.8],[97.6,16.5],[97.8,14.5],[98.5,12.5],[98.6,10.5],[98.3,8.5],[98.3,7.8],[99.2,6.8],[100.1,6.4],[100.4,5],[100.8,3.8],[101.3,2.8],[102.4,2],[103.4,1.3],[104.2,1.4],[103.8,2.6],[103.4,3.8],[103.4,4.8],[102.6,5.8],[102.1,6.2],[101.3,6.9],[100.4,7.3],[100.2,8.4],[99.9,9.2],[99.2,9.4],[99.2,10.3],[99.6,11.3],[99.9,12.6],[100.1,13.4],[100.7,13.5],[101,12.7],[102.1,12.2],[102.6,12],[103.1,11],[104.4,10.4],[104.8,8.6],[105.2,8.7],[106.6,9.6],[107.2,10.4],[108.9,11.3],[109.2,12.6],[109.3,13.8],[108.8,15.3],[108.3,16],[107.1,17],[106.5,18],[105.7,19],[106.2,20.2],[107.5,21.5],[108.5,21.7],[110,21.2],[111,21.5],[112,22],[113,22.5],[113,23]],
+  [[92,23],[92.3,21],[93.6,19.5],[94.4,18],[94.2,16],[95.3,15.8],[97.6,16.5],[97.8,14.5],[98.5,12.5],[98.6,10.5],[98.3,8.5],[98.3,7.8],[99.2,6.8],[100.1,6.4],[100.4,5],[100.8,3.8],[101.3,2.8],[102.4,2],[103.4,1.3],[104.2,1.4],[103.8,2.6],[103.4,3.8],[103.4,4.8],[102.6,5.8],[102.1,6.2],[101.3,6.9],[100.4,7.3],[100.2,8.4],[99.9,9.2],[99.2,9.4],[99.2,10.3],[99.6,11.3],[99.9,12.6],[100.1,13.4],[100.7,13.5],[101,12.7],[102.1,12.2],[102.6,12],[103.1,11],[104.4,10.4],[104.8,8.6],[105.2,8.7],[106.6,9.6],[107.2,10.4],[108.9,11.3],[109.2,12.6],[109.3,13.8],[108.8,15.3],[108.3,16],[107.1,17],[106.5,18],[105.7,19],[106.2,20.2],[107.5,21.5],[108.5,21.7],[110,21.2],[111,21.5],[112,21.8],[113.2,22.2],[114.2,22.2],[115.5,22.7],[116.8,23.2],[117.5,24],[117.5,27],[92,27]],
   [[95.2,5.6],[96.4,5.2],[97.6,5.1],[98.3,4.2],[99.8,2.9],[100.9,2],[102.2,1.4],[103.1,.4],[103.8,-1],[104.6,-1.8],[105.9,-3],[105.9,-5.8],[104.6,-5.9],[103.5,-4.9],[102.3,-3.9],[101.2,-2.7],[100.3,-1],[99.2,.3],[98.6,1.7],[97.6,2.8],[96.5,3.8],[95.5,4.6]],
   [[108.9,.5],[109.1,1.6],[109.7,2],[111.3,2.4],[112.9,3.1],[113.9,4.5],[115,5],[115.4,5.4],[116,6],[116.8,7],[117.3,6.6],[117.7,5.9],[119.2,5.3],[118.3,4.4],[117.7,3.8],[117.9,2],[118.9,1],[117.9,.8],[117.5,-.5],[116.6,-1.4],[116.5,-2.5],[116,-3.6],[114.6,-4],[113,-3.2],[111.7,-3.4],[110.2,-2.9],[110,-1.4],[109,-.3]],
   [[105.2,-6.8],[106,-5.9],[108.3,-6.3],[110.4,-6.9],[112.6,-6.9],[114.4,-7.7],[114.6,-8.7],[112,-8.3],[109,-7.8],[106.4,-7.4]],
-  [[114.9,-8.1],[115.7,-8.4],[115.2,-8.8],[114.6,-8.5]],
+  [[114.5,-8.1],[115.7,-8.3],[115.6,-8.9],[115.1,-8.9],[114.5,-8.5]],
   [[118.8,-2.8],[119.4,-.8],[120.1,.7],[121.5,1.1],[123,.9],[124.5,.9],[124.9,1.5],[125.2,1.3],[124.4,.3],[123,.4],[121.3,.4],[121,-.8],[122.6,-.9],[123.4,-1],[122,-1.9],[121.5,-2],[122.4,-3.5],[122.8,-4.6],[121.5,-4.7],[121,-2.8],[120.5,-2.8],[120.4,-5.5],[119.5,-5.6],[119.4,-3.5]],
   [[117.2,8.3],[117.6,8.5],[119,10],[119.7,11],[119.5,11.4],[118.7,10.3],[117.9,9.3],[117.1,8.6]],
   [[121.9,6.9],[122.2,7.6],[123,7.6],[123.5,8.4],[124.2,8.3],[124.8,9],[125.5,9.8],[126.2,9.2],[126.6,7.3],[126.2,6.4],[125.6,6],[125.2,5.6],[124,6.4],[123.6,7.2],[122.8,7.3],[122.1,6.8]],
   [[120.6,18.5],[121.9,18.3],[122.3,17],[121.6,15.8],[121.6,14.2],[122.6,14.1],[124,13],[123.9,12.6],[122.8,13.2],[121.8,13.6],[120.6,13.9],[120.9,14.8],[120,15.5],[119.8,16.4],[120.4,16.8]],
   [[108.7,19.2],[110.5,20.1],[111,19.6],[110.5,18.5],[109.5,18.2],[108.6,18.6]],
+  [[120.1,23],[120.7,22],[121,22.6],[121.6,24],[121.9,25],[121.5,25.3],[120.7,24.6],[120.2,23.6]],
 ];
 function inPoly(x, y, poly) { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; }
+const isLand = (lon, lat) => LAND.some(p => inPoly(lon, lat, p));
 
+/* ---------- tracker: dot-matrix map, arc, plane ---------- */
 let trk = null;
 function initTracker(m) {
   const map = $('#trkMap'), cv = $('#trkCanvas'), A = AIRPORTS[m.s.from], B = AIRPORTS[m.s.to];
   const W = map.clientWidth, H = map.clientHeight, dpr = Math.min(2, devicePixelRatio || 1);
   cv.width = W * dpr; cv.height = H * dpr;
   const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  // fit both airports, leaving room for labels and the panels on top
   const lonMin = Math.min(A.lon, B.lon), lonMax = Math.max(A.lon, B.lon), latMin = Math.min(A.lat, B.lat), latMax = Math.max(A.lat, B.lat);
   const spanLon = Math.max(14, lonMax - lonMin + 10), spanLat = Math.max(8, latMax - latMin + 7);
   const sc = Math.min(W / spanLon, (H - 70) / spanLat);
   const cx = (lonMin + lonMax) / 2, cy = (latMin + latMax) / 2;
   const proj = (lon, lat) => [W/2 + (lon - cx) * sc, 34 + (H - 34)/2 - (lat - cy) * sc];
   const unproj = (x, y) => [cx + (x - W/2) / sc, cy - (y - 34 - (H - 34)/2) / sc];
-  // dot layer
   const off = document.createElement('canvas'); off.width = cv.width; off.height = cv.height;
   const o = off.getContext('2d'); o.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const dot = getComputedStyle(document.documentElement).getPropertyValue('--trk-dot').trim() || '#7cc4ff';
-  o.fillStyle = dot;
+  o.fillStyle = css('--trk-dot') || '#7cc4ff';
   const step = W < 600 ? 7 : 8;
   for (let y = step/2; y < H; y += step) for (let x = step/2; x < W; x += step) {
     const [lon, lat] = unproj(x, y);
-    if (LAND.some(p => inPoly(lon, lat, p))) { const r = rng(hash(x + ':' + y))(); o.globalAlpha = .18 + r * .55; o.beginPath(); o.arc(x, y, 1.25, 0, 7); o.fill(); }
+    if (isLand(lon, lat)) { const r = rng(hash(x + ':' + y))(); o.globalAlpha = .18 + r * .55; o.beginPath(); o.arc(x, y, 1.25, 0, 7); o.fill(); }
   }
   const P0 = proj(A.lon, A.lat), P2 = proj(B.lon, B.lat);
   const dx = P2[0] - P0[0], dy = P2[1] - P0[1], len = Math.hypot(dx, dy) || 1;
@@ -756,7 +971,6 @@ function initTracker(m) {
   const lift = Math.min(len * .28, 90), P1 = [(P0[0] + P2[0]) / 2 + nx * lift, (P0[1] + P2[1]) / 2 + ny * lift];
   const bz = t => [(1-t)**2*P0[0] + 2*(1-t)*t*P1[0] + t*t*P2[0], (1-t)**2*P0[1] + 2*(1-t)*t*P1[1] + t*t*P2[1]];
   const tan = t => [2*(1-t)*(P1[0]-P0[0]) + 2*t*(P2[0]-P1[0]), 2*(1-t)*(P1[1]-P0[1]) + 2*t*(P2[1]-P1[1])];
-  // labels
   const place = (el, P, side) => {
     const w = el.offsetWidth, h = el.offsetHeight;
     let x = side < 0 ? P[0] - w - 14 : P[0] + 14, y = P[1] - h - 14;
@@ -787,6 +1001,7 @@ function initTracker(m) {
 
 function drawTrk(p, now = 0, dir = 1, turn = 0) {
   const {ctx, off, W, H, P0, P2, bz, tan, m} = trk, cur = m.cur, q = dir > 0 ? p : 1 - p;
+  if (!document.body.contains(ctx.canvas)) return;
   ctx.clearRect(0, 0, W, H);
   ctx.drawImage(off, 0, 0, W, H);
   const N = 90, pts = Array.from({length: N + 1}, (_, i) => bz(i / N)), cut = Math.round(p * N);
@@ -799,7 +1014,6 @@ function drawTrk(p, now = 0, dir = 1, turn = 0) {
     ctx.strokeStyle = g; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
     ctx.beginPath(); behind.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke();
   }
-  // contrail fading out behind the plane
   const i0 = dir > 0 ? Math.max(0, cut - 7) : Math.min(N, cut + 7), trail = dir > 0 ? pts.slice(i0, cut + 1) : pts.slice(cut, i0 + 1).reverse();
   if (trail.length >= 3) {
     const [ax, ay] = trail[0], [bx, by] = trail[trail.length - 1], cg = ctx.createLinearGradient(ax, ay, bx, by);
@@ -812,7 +1026,6 @@ function drawTrk(p, now = 0, dir = 1, turn = 0) {
   const plane = $('#plane'); plane.style.left = x + 'px'; plane.style.top = y + 'px';
   const airborne = q > 0 && q < 1, bank = airborne ? Math.sin(now / 1300) * 3 : 0;
   plane.querySelector('svg').style.transform = `rotate(${Math.atan2(ty, tx) * 180 / Math.PI + 90 + (dir < 0 ? 180 : 0) + turn + bank}deg)`;
-  // flight numbers, with small live wobble at cruise
   const ramp = q < .12 ? q / .12 : q > .85 ? (1 - q) / .15 : 1, cruise = airborne && ramp === 1;
   const maxAlt = cur.km < 500 ? 7600 : cur.km < 1000 ? 9800 : 11280, maxSpd = cur.km < 500 ? 690 : 840;
   $('#tAlt').textContent = spaced(Math.round((maxAlt * ramp + (cruise ? Math.sin(now / 900) * 15 : 0)) / 5) * 5) + ' m';
@@ -826,6 +1039,222 @@ function drawTrk(p, now = 0, dir = 1, turn = 0) {
   const sc = $('#scrub'); sc.style.setProperty('--p', (p * 100) + '%'); sc.setAttribute('aria-valuenow', Math.round(q * 100));
 }
 
+/* ---------- weather map: rain radar, temperature and wind heat maps ---------- */
+const RAMPS = {
+  rain: {stops:[[.5,[60,190,110,0]],[1.2,[60,190,110,.4]],[3,[150,220,60,.68]],[7,[250,225,60,.78]],[14,[250,150,40,.85]],[25,[235,55,60,.9]],[45,[200,40,160,.95]]],
+         lo:'Light', hi:'Storm', unit: v => v < .3 ? 'Dry' : `${v.toFixed(1)} mm/h · ${v < 2.5 ? 'Light' : v < 10 ? 'Moderate' : v < 25 ? 'Heavy' : 'Storm'}`},
+  temp: {stops:[[20,[60,120,240,.55]],[24,[40,190,230,.55]],[27,[150,225,70,.55]],[30,[250,205,40,.6]],[33,[250,120,30,.62]],[36,[220,40,40,.66]]],
+         lo:'20°', hi:'36°', unit: v => `${Math.round(v)}°C`},
+  wind: {stops:[[8,[140,190,250,.35]],[18,[100,160,250,.5]],[30,[160,130,250,.6]],[45,[240,110,190,.7]],[60,[240,70,70,.8]]],
+         lo:'8 km/h', hi:'60+', unit: v => `${Math.round(v)} km/h`},
+};
+function rampColor(stops, v) {
+  if (v <= stops[0][0]) return stops[0][1];
+  for (let i = 1; i < stops.length; i++) if (v <= stops[i][0]) {
+    const [a, ca] = stops[i-1], [b, cb] = stops[i], t = (v - a) / (b - a);
+    return ca.map((c, j) => c + (cb[j] - c) * t);
+  }
+  return stops[stops.length - 1][1];
+}
+let wx = null;
+function initRadar(m) {
+  const box = $('#wxMap'), cv = $('#wxCanvas'), A = AIRPORTS[m.s.from], B = AIRPORTS[m.s.to];
+  const W = box.clientWidth, H = box.clientHeight, dpr = Math.min(2, devicePixelRatio || 1);
+  cv.width = W * dpr; cv.height = H * dpr;
+  const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const lonMin = Math.min(A.lon, B.lon), lonMax = Math.max(A.lon, B.lon), latMin = Math.min(A.lat, B.lat), latMax = Math.max(A.lat, B.lat);
+  const spanLon = Math.max(18, lonMax - lonMin + 14), spanLat = Math.max(11, latMax - latMin + 9);
+  const sc = Math.min(W / spanLon, H / spanLat), cx = (lonMin + lonMax) / 2, cy = (latMin + latMax) / 2;
+  const proj = (lon, lat) => [W/2 + (lon - cx) * sc, H/2 - (lat - cy) * sc];
+  const unproj = (x, y) => [cx + (x - W/2) / sc, cy - (y - H/2) / sc];
+  const [vLon0] = unproj(0, 0), [vLon1] = unproj(W, 0), vLat1 = unproj(0, 0)[1], vLat0 = unproj(0, H)[1];
+  // base map + coastline layers
+  const mk = () => { const c = document.createElement('canvas'); c.width = cv.width; c.height = cv.height; const x = c.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0); return [c, x]; };
+  const [base, bx] = mk(), [coast, cxx] = mk();
+  bx.fillStyle = '#0a1428'; bx.fillRect(0, 0, W, H);
+  bx.strokeStyle = 'rgba(255,255,255,.05)'; bx.lineWidth = 1;
+  for (let lo = Math.ceil(vLon0 / 5) * 5; lo <= vLon1; lo += 5) { const [x] = proj(lo, 0); bx.beginPath(); bx.moveTo(x, 0); bx.lineTo(x, H); bx.stroke(); }
+  for (let la = Math.ceil(vLat0 / 5) * 5; la <= vLat1; la += 5) { const [, y] = proj(0, la); bx.beginPath(); bx.moveTo(0, y); bx.lineTo(W, y); bx.stroke(); }
+  LAND.forEach(poly => {
+    const path = new Path2D(); poly.forEach(([lo, la], i) => { const [x, y] = proj(lo, la); i ? path.lineTo(x, y) : path.moveTo(x, y); }); path.closePath();
+    bx.fillStyle = '#18263f'; bx.fill(path);
+    cxx.strokeStyle = 'rgba(170,200,240,.35)'; cxx.lineWidth = .8; cxx.stroke(path);
+  });
+  // coarse grid for the heat field, land mask precomputed
+  const step = W < 600 ? 6 : 5, gw = Math.ceil(W / step), gh = Math.ceil(H / step);
+  const gLon = new Float32Array(gw * gh), gLat = new Float32Array(gw * gh), gLand = new Uint8Array(gw * gh);
+  for (let j = 0; j < gh; j++) for (let i = 0; i < gw; i++) { const k = j * gw + i, [lo, la] = unproj(i * step + step / 2, j * step + step / 2); gLon[k] = lo; gLat[k] = la; gLand[k] = isLand(lo, la) ? 1 : 0; }
+  // storm cells for this date: land cells peak late afternoon, sea cells before dawn, all drift with the wind
+  const r = rng(hash('wx' + m.s.date)), u = .12 + .18 * r(), v = (r() - .5) * .14;
+  const cells = [];
+  for (let n = 0; n < 40; n++) {
+    const lo = cx + (r() - .5) * spanLon * 1.4, la = cy + (r() - .5) * spanLat * 1.4, land = isLand(lo, la);
+    cells.push({lo, la, hp: land ? 15 + r() * 4.5 : 1 + r() * 7, rad: .35 + r() * .9, I: .3 + r() * .9});
+  }
+  const ports = Object.entries(AIRPORTS).filter(([, a]) => a.lon > vLon0 - 2 && a.lon < vLon1 + 2 && a.lat > vLat0 - 2 && a.lat < vLat1 + 2)
+    .map(([code, a]) => ({code, a, w: weather(code, m.s.date), xy: proj(a.lon, a.lat)}));
+  const fieldCv = document.createElement('canvas'); fieldCv.width = gw; fieldCv.height = gh;
+  const fctx = fieldCv.getContext('2d'), img = fctx.createImageData(gw, gh);
+  if (wx) cancelAnimationFrame(wx.raf);
+  const planeImg = new Image();
+  planeImg.onload = () => { if (wx && !wx.playing) drawRadar(); };
+  planeImg.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(PLANE_SVG.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" '));
+  wx = {m, ctx, W, H, proj, unproj, base, coast, gw, gh, gLon, gLat, gLand, cells, ports, u, v, fieldCv, fctx, img, planeImg, hour: Math.max(0, Math.floor(m.cur.dep / 60) - 1), playing: !reduced, raf: 0, last: 0};
+
+  makeSeg($('#wxLayer'), [{k:'rain', label:'Rain'}, {k:'temp', label:'Temp'}, {k:'wind', label:'Wind'}], wxLayer, k => { wxLayer = k; setLegend(); drawRadar(); }, true);
+  setLegend();
+  const slider = $('#wxHour'), play = $('#wxPlay');
+  slider.value = wx.hour;
+  if (!box.dataset.bound) {
+    box.dataset.bound = '1';
+    slider.addEventListener('input', () => { setPlaying(false); wx.hour = +slider.value; drawRadar(); });
+    play.addEventListener('click', () => setPlaying(!wx.playing));
+    box.addEventListener('pointermove', e => showWxTip(e));
+    box.addEventListener('pointerleave', () => { $('#wxTip').hidden = true; wx.tipAt = null; });
+  }
+  setPlaying(wx.playing);
+  drawRadar();
+}
+function setLegend() {
+  const R = RAMPS[wxLayer], st = R.stops;
+  $('#wxBar').style.background = `linear-gradient(90deg, ${st.map(s => `rgba(${s[1].slice(0,3).map(Math.round).join(',')},${Math.max(.35, s[1][3])})`).join(',')})`;
+  $('#wxLo').textContent = R.lo; $('#wxHi').textContent = R.hi;
+}
+function setPlaying(on) {
+  wx.playing = on;
+  $('#wxPlayIco').setAttribute('d', on ? 'M7 5h4v14H7zM13 5h4v14h-4z' : 'M8 5v14l11-7z');
+  $('#wxPlay').setAttribute('aria-label', on ? 'Pause' : 'Play');
+  cancelAnimationFrame(wx.raf);
+  if (on) {
+    wx.last = performance.now();
+    const loop = t => {
+      // slow the clock while the plane is in the air so its flight through the weather is easy to follow
+      const c = wx.m.cur, min = wx.hour * 60, flying = min > c.dep - 25 && min < c.arr + 25;
+      wx.hour = (wx.hour + (t - wx.last) / 1000 * (flying ? .32 : 1.3)) % 24; wx.last = t;
+      $('#wxHour').value = wx.hour; drawRadar(); wx.raf = requestAnimationFrame(loop);
+    };
+    wx.raf = requestAnimationFrame(loop);
+  }
+}
+function rainAt(lon, lat, h) {
+  let val = 0;
+  for (const c of wx.cells) {
+    const life = Math.exp(-((h - c.hp) ** 2) / 10.6); if (life < .03) continue;
+    const dl = lon - (c.lo + wx.u * (h - c.hp)), da = lat - (c.la + wx.v * (h - c.hp)), d2 = dl * dl + da * da, rr = c.rad * c.rad;
+    if (d2 > 9 * rr) continue;
+    val += c.I * life * Math.exp(-d2 / (2 * rr));
+  }
+  for (const p of wx.ports) {
+    const I = Math.max(0, wxLerp(p.w, h) - .3) / .7 * 1.15; if (I <= 0) continue;
+    const dl = lon - (p.a.lon + .2 + wx.u * (h - 17) * .4), da = lat - (p.a.lat - .08), d2 = dl * dl + da * da;
+    if (d2 > 3) continue;
+    val += I * Math.exp(-d2 / .5);
+  }
+  // break smooth blobs into ragged, banded cells like a real radar return
+  const n = .5 + .5 * (Math.sin(lon * 3.1 + h * .35) * Math.cos(lat * 2.9 - h * .25) + .5 * Math.sin(lon * 6.3 + lat * 5.1 + h * .6)) / 1.5;
+  return val * 14 * (.2 + 1.1 * n * n);
+}
+const day = (h, peak, w) => Math.exp(-((h - peak) ** 2) / w);
+function tempAt(lon, lat, h, land, rain) {
+  let t = land ? 24 + 8.5 * day(h, 14, 20) : 27.8 + .9 * day(h, 15, 30);
+  if (lat > 12) t -= (lat - 12) * .45;
+  return t - Math.min(4.5, rain * .3);
+}
+function windAt(lon, lat, h, land, rain) {
+  return (land ? 7 : 15) + Math.min(42, rain * 2.1) + 5 * Math.sin(lon * 1.3 + lat * .8 + h * .35) + (land ? 4 * day(h, 15, 18) : 0);
+}
+function valueAt(lon, lat, h, land) {
+  const rain = rainAt(lon, lat, h);
+  return wxLayer === 'rain' ? rain : wxLayer === 'temp' ? tempAt(lon, lat, h, land, rain) : windAt(lon, lat, h, land, rain);
+}
+function drawRadar() {
+  if (!wx || !document.body.contains(wx.ctx.canvas)) return;
+  const {ctx, W, H, gw, gh, gLon, gLat, gLand, img, fctx, fieldCv, hour: h, m} = wx, stops = RAMPS[wxLayer].stops, d = img.data;
+  for (let k = 0; k < gw * gh; k++) {
+    const c = rampColor(stops, valueAt(gLon[k], gLat[k], h, gLand[k]));
+    d[k*4] = c[0]; d[k*4+1] = c[1]; d[k*4+2] = c[2]; d[k*4+3] = c[3] * 255;
+  }
+  fctx.putImageData(img, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  ctx.drawImage(wx.base, 0, 0, W, H);
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+  ctx.filter = 'blur(2.5px)'; ctx.drawImage(fieldCv, 0, 0, W, H); ctx.filter = 'none';
+  ctx.drawImage(wx.coast, 0, 0, W, H);
+  if (wxLayer === 'wind') {  // light arrows show the wind direction
+    ctx.strokeStyle = 'rgba(255,255,255,.45)'; ctx.lineWidth = 1.2;
+    const ang = Math.atan2(-wx.v, wx.u);
+    for (let y = 30; y < H; y += 46) for (let x = 30; x < W; x += 46) {
+      const [lo, la] = wx.unproj(x, y), a = ang + .5 * Math.sin(lo * .9 + la * .6 + h * .2), L = 9;
+      const x2 = x + Math.cos(a) * L, y2 = y + Math.sin(a) * L;
+      ctx.beginPath(); ctx.moveTo(x - Math.cos(a) * L, y - Math.sin(a) * L); ctx.lineTo(x2, y2);
+      ctx.lineTo(x2 - Math.cos(a - .5) * 4, y2 - Math.sin(a - .5) * 4); ctx.moveTo(x2, y2); ctx.lineTo(x2 - Math.cos(a + .5) * 4, y2 - Math.sin(a + .5) * 4); ctx.stroke();
+    }
+  }
+  // route + airports
+  const A = wx.proj(AIRPORTS[m.s.from].lon, AIRPORTS[m.s.from].lat), B = wx.proj(AIRPORTS[m.s.to].lon, AIRPORTS[m.s.to].lat);
+  ctx.setLineDash([5, 6]); ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke(); ctx.setLineDash([]);
+  ctx.font = '600 11px "Plus Jakarta Sans", system-ui, sans-serif'; ctx.textBaseline = 'middle';
+  for (const p of wx.ports) {
+    const [x, y] = p.xy, mine = p.code === m.s.from || p.code === m.s.to;
+    if (mine) {
+      const val = valueAt(p.a.lon, p.a.lat, h, 1), txt = `${p.code} · ${RAMPS[wxLayer].unit(val).split(' · ')[0]}`;
+      ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.beginPath(); ctx.arc(x, y, 10, 0, 7); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x, y, 4, 0, 7); ctx.fill();
+      ctx.font = '700 12px "Plus Jakarta Sans", system-ui, sans-serif';
+      const tw = ctx.measureText(txt).width, bxx = Math.min(W - tw - 22, Math.max(4, x + 12)), byy = Math.max(14, Math.min(H - 14, y - 16));
+      ctx.fillStyle = 'rgba(8,13,30,.82)'; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(bxx, byy - 11, tw + 16, 22, 7) : ctx.rect(bxx, byy - 11, tw + 16, 22); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.fillText(txt, bxx + 8, byy);
+      ctx.font = '600 11px "Plus Jakarta Sans", system-ui, sans-serif';
+    } else {
+      ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.beginPath(); ctx.arc(x, y, 2.5, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.fillText(p.code, x + 6, y);
+    }
+  }
+  drawRadarPlane(A, B, h);
+  $('#wxTime').textContent = hhmm(h * 60);
+  if (wx.tipAt) showWxTip(wx.tipAt);
+}
+// the plane follows the clock: parked before takeoff, flying the route, parked after landing
+function drawRadarPlane(A, B, h) {
+  const {ctx, m, planeImg} = wx, c = m.cur, t = Math.min(1, Math.max(0, (h * 60 - c.dep) / c.dur));
+  const x = A[0] + (B[0] - A[0]) * t, y = A[1] + (B[1] - A[1]) * t, ang = Math.atan2(B[1] - A[1], B[0] - A[0]);
+  const flying = t > 0 && t < 1;
+  if (t > 0) {  // flown part of the route, with a glowing contrail near the plane
+    const g = ctx.createLinearGradient(A[0], A[1], x, y); g.addColorStop(0, 'rgba(56,189,248,.5)'); g.addColorStop(1, 'rgba(236,72,153,.95)');
+    ctx.save(); ctx.strokeStyle = g; ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.shadowColor = 'rgba(200,230,255,.8)'; ctx.shadowBlur = flying ? 10 : 0;
+    ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(x, y); ctx.stroke(); ctx.restore();
+  }
+  if (!flying) {  // waiting at the gate or landed: soft pulse
+    const pulse = (performance.now() % 1600) / 1600;
+    ctx.strokeStyle = `rgba(139,92,246,${(.7 * (1 - pulse)).toFixed(2)})`; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(x, y, 14 + pulse * 14, 0, 7); ctx.stroke();
+  }
+  if (planeImg.complete && planeImg.naturalWidth) {
+    const size = (flying ? 40 : 30) * (wx.W < 600 ? .85 : 1);
+    ctx.save(); ctx.translate(x, y); ctx.rotate(ang + Math.PI / 2 + (flying ? Math.sin(performance.now() / 1300) * .05 : 0));
+    ctx.shadowColor = 'rgba(0,0,0,.55)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 6;
+    ctx.drawImage(planeImg, -size / 2, -size / 2, size, size); ctx.restore();
+  }
+  if (flying) {  // what the plane is flying through right now
+    const [lo, la] = wx.unproj(x, y), txt = `${c.flightNo} · ${RAMPS[wxLayer].unit(valueAt(lo, la, h, isLand(lo, la) ? 1 : 0)).split(' · ')[0]}`;
+    ctx.font = '700 12px "Plus Jakarta Sans", system-ui, sans-serif'; ctx.textBaseline = 'middle';
+    const tw = ctx.measureText(txt).width, bx = Math.min(wx.W - tw - 20, Math.max(4, x - tw / 2 - 8)), by = Math.min(wx.H - 14, y + 30);
+    ctx.fillStyle = 'rgba(139,92,246,.9)'; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(bx, by - 11, tw + 16, 22, 11) : ctx.rect(bx, by - 11, tw + 16, 22); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.fillText(txt, bx + 8, by);
+  }
+}
+function showWxTip(e) {
+  const box = $('#wxMap'), r = box.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  if (x < 0 || y < 0 || x > r.width || y > r.height) return;
+  wx.tipAt = {clientX: e.clientX, clientY: e.clientY};
+  const [lon, lat] = wx.unproj(x, y), land = isLand(lon, lat), val = valueAt(lon, lat, wx.hour, land);
+  const near = wx.ports.find(p => Math.hypot(p.xy[0] - x, p.xy[1] - y) < 16);
+  const tip = $('#wxTip');
+  tip.innerHTML = `${near ? `<b>${near.a.name}</b><br>` : ''}${RAMPS[wxLayer].unit(val)}`;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px'; tip.hidden = false;
+}
+
 /* ---------- charts ---------- */
 const niceStep = raw => { const p = 10 ** Math.floor(Math.log10(raw)), n = raw / p; return (n < 1.5 ? 1 : n < 3 ? 2 : n < 7 ? 5 : 10) * p; };
 function tipEl(host) { const t = document.createElement('div'); t.className = 'tip'; t.hidden = true; host.appendChild(t); return t; }
@@ -833,121 +1262,170 @@ function place(tip, el, W, H, x, y) { const r = el.getBoundingClientRect(); tip.
 
 function drawChart() {
   if (!model) return;
-  const el = $('#chart'), note = $('#cnote'), leg = $('#legend');
+  const el = $('#chart'), note = $('#cnote'), leg = $('#legend'), optBox = $('#chartOpt');
   const W = Math.max(280, el.clientWidth);
-  if (tab === 'price') drawPrice(el, W, note, leg); else if (tab === 'delays') drawDelays(el, W, note, leg); else drawWx(el, W, note, leg);
+  optBox.innerHTML = '';
+  if (tab === 'price') drawPrice(el, W, note, leg);
+  else if (tab === 'delays') {
+    makeSeg(optBox, [{k:12, label:'12 wk'}, {k:26, label:'26 wk'}], histWeeks, k => { histWeeks = k; drawChart(); });
+    drawDelays(el, W, note, leg);
+  } else drawBest(el, W, note, leg);
   el.classList.remove('fade'); void el.offsetWidth; el.classList.add('fade');
 }
 
+// past fares move in steps (fare buckets) with the odd flash sale; the future is a forecast with a widening range
+function fareSeries(s, cur) {
+  const r = rng(hash(cur.flightNo + s.date + 'fares')), past = [], ahead = [];
+  let mult = 1, left = 0;
+  for (let i = -30; i < 0; i++) {
+    if (left <= 0) { left = 2 + Math.floor(r() * 5); mult = 1 + (r() - .5) * .16; if (r() < .1) mult *= .74; }
+    left--;
+    past.push({i, v: Math.round(cur.fare(s.days - i) * mult)});
+  }
+  for (let i = 0; i <= s.days; i++) {
+    const v = cur.fare(s.days - i), w = Math.min(.22, .04 + .005 * i);
+    ahead.push({i, v, lo: Math.round(v * (1 - w)), hi: Math.round(v * (1 + w))});
+  }
+  return {past, ahead};
+}
+
 function drawPrice(el, W, note, leg) {
-  const {s, cur} = model, today = Math.min(60, s.days), H = 240, L = 46, R = 16, T = 24, B = 28;
-  const pts = []; for (let d = 60; d >= 0; d--) pts.push({d, v: cur.fare(d)});
-  const vals = pts.map(p => p.v), lo = Math.min(...vals) * .88, hi = Math.max(Math.max(...vals) * 1.06, s.price * 1.08);
+  const {s, cur} = model, {past, ahead} = fareSeries(s, cur), H = 250, L = 46, R = 18, T = 26, B = 28;
+  const i0 = -30, i1 = Math.max(s.days, 1);
+  const all = [...past.map(p => p.v), ...ahead.map(p => p.hi), ...ahead.map(p => p.lo), s.price];
+  const lo = Math.min(...all) * .94, hi = Math.max(...all) * 1.04;
   const step = niceStep((hi - lo) / 4), y0 = Math.floor(lo/step)*step, y1 = Math.ceil(hi/step)*step;
-  const x = d => L + (60 - d) / 60 * (W - L - R), y = v => T + (1 - (v - y0)/(y1 - y0)) * (H - T - B);
-  const line = arr => arr.map((p,i) => `${i?'L':'M'}${x(p.d).toFixed(1)},${y(p.v).toFixed(1)}`).join('');
+  const x = i => L + (i - i0) / (i1 - i0) * (W - L - R), y = v => T + (1 - (v - y0)/(y1 - y0)) * (H - T - B);
+  const line = arr => arr.map((p, k) => `${k ? 'L' : 'M'}${x(p.i).toFixed(1)},${y(p.v).toFixed(1)}`).join('');
+  const stepLine = arr => arr.map((p, k) => k ? `H${x(p.i).toFixed(1)}V${y(p.v).toFixed(1)}` : `M${x(p.i).toFixed(1)},${y(p.v).toFixed(1)}`).join('');
+  const band = line(ahead.map(p => ({i:p.i, v:p.hi}))) + ahead.slice().reverse().map(p => `L${x(p.i).toFixed(1)},${y(p.lo).toFixed(1)}`).join('') + 'Z';
+  const bestPt = ahead.reduce((a, b) => b.v < a.v ? b : a, ahead[0]);
   let g = '';
   for (let v = y0; v <= y1 + 1e-6; v += step) g += `<line class="c-grid" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text class="c-axis" x="${L-8}" y="${y(v)+4}" text-anchor="end">${v}</text>`;
-  [60,45,30,15,7,0].forEach(d => g += `<text class="c-axis" x="${x(d)}" y="${H-8}" text-anchor="middle">${d === 0 ? 'Fly' : d + 'd'}</text>`);
-  const tx = x(today), sy = y(s.price), rightSide = tx > W*.6;
-  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Fare by days before departure">
+  const ticks = [i0, -15, 0, ...(s.days > 24 ? [Math.round(s.days / 2)] : []), s.days].filter((t, k, a) => a.indexOf(t) === k);
+  ticks.forEach(t => g += `<text class="c-axis" x="${x(t)}" y="${H-8}" text-anchor="${t === s.days && t !== 0 ? 'end' : t === i0 ? 'start' : 'middle'}">${t === 0 ? 'Today' : t === s.days ? 'Fly' : fmtDate(addDays(TODAY, t))}</text>`);
+  const tx = x(0), sy = y(s.price), bx = x(bestPt.i), byy = y(bestPt.v), lbl = bestPt.i === 0 ? 'Best: today' : `Best: ${fmtDate(addDays(TODAY, bestPt.i))}`;
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Past fares and forecast to departure">
     ${g}
-    <path class="c-past" d="${line(pts.filter(p => p.d >= today))}"/>
-    <path class="c-line" d="${line(pts.filter(p => p.d <= today))}"/>
-    <line class="c-today" x1="${tx}" x2="${tx}" y1="${T-4}" y2="${H-B}"/>
-    <text class="c-lab2" x="${tx}" y="${T-10}" text-anchor="${rightSide ? 'end' : 'middle'}">Today</text>
+    <path class="c-band" d="${band}"/>
+    <path class="c-obs" d="${stepLine(past)}"/>
+    <path class="c-fc" d="${line(ahead)}"/>
+    <line class="c-today" x1="${tx}" x2="${tx}" y1="${T-6}" y2="${H-B}"/>
+    <circle class="c-best" cx="${bx}" cy="${byy}" r="5"/>
+    <text class="c-best-lab" x="${bx + (bx > W * .7 ? -9 : 9)}" y="${byy + 18}" text-anchor="${bx > W * .7 ? 'end' : 'start'}">${lbl}</text>
     <circle class="c-you" cx="${tx}" cy="${sy}" r="6"/>
-    <text class="c-lab" x="${tx + (rightSide ? -12 : 12)}" y="${sy - 10}" text-anchor="${rightSide ? 'end' : 'start'}">You: RM ${s.price}</text>
+    <text class="c-lab" x="${tx - 10}" y="${sy - 10}" text-anchor="end">You: RM ${s.price}</text>
     <line class="c-hair" id="hair" y1="${T}" y2="${H-B}" visibility="hidden"/><circle class="c-dot" id="dot" r="5" visibility="hidden"/>
     <rect class="c-hit" x="${L}" y="${T}" width="${W-L-R}" height="${H-T-B}"/>
   </svg>`;
-  note.textContent = model.rise > 0 ? 'Rises from 18 days out' : 'Flat for now';
-  leg.innerHTML = `<span><i class="sw" style="background:var(--accent)"></i>Fair price ahead</span><span><i class="sw" style="background:var(--ink-3)"></i>Already passed</span>`;
-  const tip = tipEl(el), hair = el.querySelector('#hair'), dot = el.querySelector('#dot');
+  note.textContent = model.rise > 0 ? 'Rising' : 'Flat';
+  leg.innerHTML = `<span><i class="sw" style="background:var(--ink-2)"></i>Past</span><span><i class="sw dash"></i>Forecast</span><span><i class="sw" style="background:var(--accent-soft)"></i>Range</span><span><i class="sw" style="background:var(--good)"></i>Best day</span>`;
+  const tip = tipEl(el), hair = el.querySelector('#hair'), dot = el.querySelector('#dot'), pts = [...past, ...ahead];
   el.querySelector('.c-hit').addEventListener('pointermove', e => {
     const r = el.getBoundingClientRect(), px = (e.clientX - r.left) * W / r.width;
-    const d = Math.max(0, Math.min(60, Math.round(60 - (px - L) / (W - L - R) * 60))), v = cur.fare(d);
-    hair.setAttribute('x1', x(d)); hair.setAttribute('x2', x(d)); hair.setAttribute('visibility', 'visible');
-    dot.setAttribute('cx', x(d)); dot.setAttribute('cy', y(v)); dot.setAttribute('visibility', 'visible');
-    tip.innerHTML = `RM ${v} <span>· ${d === 0 ? 'flight day' : d + ' days before'}</span>`;
-    place(tip, el, W, H, x(d), y(v));
+    const i = Math.max(i0, Math.min(s.days, Math.round(i0 + (px - L) / (W - L - R) * (i1 - i0)))), p = pts.find(q => q.i === i); if (!p) return;
+    hair.setAttribute('x1', x(i)); hair.setAttribute('x2', x(i)); hair.setAttribute('visibility', 'visible');
+    dot.setAttribute('cx', x(i)); dot.setAttribute('cy', y(p.v)); dot.setAttribute('visibility', 'visible');
+    tip.innerHTML = `${fmtDate(addDays(TODAY, i))} · RM ${p.v}${p.lo ? ` <span>(${p.lo}–${p.hi})</span>` : ' <span>· past</span>'}`;
+    place(tip, el, W, H, x(i), y(p.v));
   });
   el.querySelector('.c-hit').addEventListener('pointerleave', () => { tip.hidden = true; hair.setAttribute('visibility','hidden'); dot.setAttribute('visibility','hidden'); });
 }
 
 function drawDelays(el, W, note, leg) {
-  const hist = model.hist, H = 240, L = 40, R = 10, T = 16, B = 28;
-  const max = Math.max(60, Math.ceil(Math.max(...hist.map(h => h.mins)) / 30) * 30);
+  const hist = model.hist.slice(-histWeeks), H = 240, L = 40, R = 10, T = 16, B = 28;
+  const max = Math.max(60, Math.ceil(Math.max(...hist.map(h => h.cancelled ? 0 : h.mins)) / 30) * 30);
   const bw = (W - L - R) / hist.length, y = v => T + (1 - v / max) * (H - T - B), base = y(0);
   let g = '';
   for (let v = 0; v <= max; v += 30) g += `<line class="c-grid" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text class="c-axis" x="${L-8}" y="${y(v)+4}" text-anchor="end">${v}m</text>`;
+  const every = Math.ceil(hist.length / (W < 560 ? 5 : 8));
   hist.forEach((h, i) => {
-    const bx = L + i*bw + bw*.2, w = bw*.6, top = y(Math.max(2, h.mins)), rr = Math.min(4, w/2);
-    g += `<path class="${h.late ? 'c-late' : 'c-bar'}" d="M${bx},${base} V${top+rr} Q${bx},${top} ${bx+rr},${top} H${bx+w-rr} Q${bx+w},${top} ${bx+w},${top+rr} V${base}Z"/>`;
-    if (i % 2 === 1 || W > 560) g += `<text class="c-axis" x="${bx + w/2}" y="${H-8}" text-anchor="middle">${fmtDate(h.day)}</text>`;
+    const w = Math.max(3, bw * .62), bx = L + i*bw + (bw - w) / 2, val = h.cancelled ? max : Math.max(2, h.mins), top = y(val), rr = Math.min(4, w/2);
+    const cls = h.cancelled ? 'c-cxl' : h.late ? `c-${h.cause}` : 'c-bar';
+    g += `<path class="${cls}" d="M${bx},${base} V${top+rr} Q${bx},${top} ${bx+rr},${top} H${bx+w-rr} Q${bx+w},${top} ${bx+w},${top+rr} V${base}Z"/>`;
+    if (h.cancelled) g += `<text class="c-cxl-lab" x="${bx + w/2}" y="${top + 13}" text-anchor="middle">✕</text>`;
+    if ((hist.length - 1 - i) % every === 0) g += `<text class="c-axis" x="${bx + w/2}" y="${H-8}" text-anchor="middle">${fmtDate(h.day)}</text>`;
     g += `<rect class="c-hit" data-i="${i}" x="${L + i*bw}" y="${T}" width="${bw}" height="${H-T-B}"/>`;
   });
   g += `<line class="c-thr" x1="${L}" x2="${W-R}" y1="${y(30)}" y2="${y(30)}"/><text class="c-thr-lab" x="${W-R}" y="${y(30)-6}" text-anchor="end">Late (30m+)</text>`;
-  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Delay minutes for this flight over the last 12 weeks">${g}</svg>`;
-  note.textContent = `Late ${model.lateN} of 12 weeks`;
-  leg.innerHTML = `<span><i class="sw" style="background:var(--bad)"></i>Late</span><span><i class="sw" style="background:var(--bar)"></i>On time</span>`;
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Delay minutes for this flight, last ${histWeeks} weeks">${g}</svg>`;
+  const lateN = hist.filter(h => h.late).length, cx = hist.filter(h => h.cancelled).length;
+  const avg = Math.round(hist.filter(h => !h.cancelled).reduce((a, h) => a + h.mins, 0) / Math.max(1, hist.filter(h => !h.cancelled).length));
+  note.textContent = `Late ${lateN}/${hist.length} · Avg ${avg} min${cx ? ` · ${cx} cancelled` : ''}`;
+  leg.innerHTML = ['wx','busy','late','ops'].map(k => `<span><i class="sw" style="background:var(--c-${k})"></i>${CAUSE[k]}</span>`).join('') + `<span><i class="sw" style="background:var(--bar)"></i>On time</span><span><i class="sw" style="background:var(--ink-3)"></i>Cancelled</span>`;
   const tip = tipEl(el);
   el.querySelectorAll('.c-hit').forEach(r => {
     r.addEventListener('pointerenter', () => { const i = +r.dataset.i, h = hist[i];
-      tip.innerHTML = `${fmtDate(h.day)} · +${h.mins} min${h.late ? ` <span>· ${h.cause}</span>` : ''}`;
-      place(tip, el, W, H, L + i*bw + bw/2, y(Math.max(2, h.mins))); });
+      tip.innerHTML = `${fmtDate(h.day)} · ${h.cancelled ? 'Cancelled' : `+${h.mins} min`}${h.late && !h.cancelled ? ` <span>· ${CAUSE[h.cause]}</span>` : ''}`;
+      place(tip, el, W, H, L + i*bw + bw/2, y(h.cancelled ? max : Math.max(2, h.mins))); });
     r.addEventListener('pointerleave', () => tip.hidden = true);
   });
 }
 
-function drawWx(el, W, note, leg) {
-  const {s, cur} = model, L = 4, R = 4, rowH = 64, head = 22, gap = 16, axis = 20;
-  const H = 2*(head + rowH) + gap + axis, bw = (W - L - R) / 24;
-  const rows = [{code:s.from, wx:cur.wxA, mark:cur.dep, lab:'Takeoff', y:0}, {code:s.to, wx:cur.wxB, mark:cur.arr, lab:'Landing', y:head + rowH + gap}];
-  let g = '';
-  rows.forEach((row, ri) => {
-    const base = row.y + head + rowH, w0 = wxAt(row.wx, row.mark);
-    g += `<text class="c-lab" x="${L}" y="${row.y + 14}">${row.code} · ${row.lab} ${hhmm(row.mark)} · ${pct(w0.p)} rain</text>`;
-    row.wx.forEach(w => {
-      const h = Math.max(2, w.p*(rowH - 4)), bx = L + w.h*bw + 1, wd = Math.max(2, bw - 2), rr = Math.min(3, wd/2);
-      g += `<path class="${w.storm ? 'c-storm' : 'c-rain'}" d="M${bx},${base} V${base-h+rr} Q${bx},${base-h} ${bx+rr},${base-h} H${bx+wd-rr} Q${bx+wd},${base-h} ${bx+wd},${base-h+rr} V${base}Z"/>`;
-      g += `<rect class="c-hit" data-r="${ri}" data-h="${w.h}" x="${L + w.h*bw}" y="${row.y + head}" width="${bw}" height="${rowH}"/>`;
+// delay chance by weekday and departure hour, averaged over the next 3 weeks
+function drawBest(el, W, note, leg) {
+  const {s, cur} = model, hours = [6, 8, 10, 12, 14, 16, 18, 20, 22], days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const cell = (wd, hr) => {
+    let sum = 0;
+    for (let w = 0; w < 3; w++) {
+      let d = addDays(TODAY, 1 + 7 * w); while ((d.getDay() + 6) % 7 !== wd) d = addDays(d, 1);
+      const sl = {dep: hr * 60, peak: (hr >= 7 && hr <= 9) || (hr >= 17 && hr <= 20) ? 1 : .6, knock: Math.max(0, (hr - 6) / 16 * .8) + (wd === 4 || wd === 6 ? .15 : 0)};
+      sum += delayModel(s, sl, iso(d), cur.dur, s.airline, hr * 60).p;
+    }
+    return sum / 3;
+  };
+  const grid = days.map((_, wd) => hours.map(hr => cell(wd, hr)));
+  const flat = grid.flat(), mn = Math.min(...flat), mx = Math.max(...flat);
+  let bestC = [0, 0]; grid.forEach((row, a) => row.forEach((v, b) => { if (v < grid[bestC[0]][bestC[1]]) bestC = [a, b]; }));
+  const myRow = (s.dt.getDay() + 6) % 7, myCol = hours.reduce((bi, hr, k) => Math.abs(hr * 60 - cur.dep) < Math.abs(hours[bi] * 60 - cur.dep) ? k : bi, 0);
+  const L = 40, T = 22, gap = 3, cw = (W - L) / hours.length, ch = 30, H = T + days.length * ch + 8;
+  let g = hours.map((hr, k) => `<text class="c-axis" x="${L + k*cw + cw/2}" y="${T - 8}" text-anchor="middle">${String(hr).padStart(2,'0')}:00</text>`).join('');
+  grid.forEach((row, a) => {
+    g += `<text class="c-axis" x="${L - 8}" y="${T + a*ch + ch/2 + 4}" text-anchor="end">${days[a]}</text>`;
+    row.forEach((v, b) => {
+      const t = (v - mn) / Math.max(.001, mx - mn), op = .1 + t * .85, cx = L + b*cw + gap/2, cy = T + a*ch + gap/2;
+      g += `<rect class="c-heat" x="${cx}" y="${cy}" width="${cw - gap}" height="${ch - gap}" rx="5" style="fill-opacity:${op.toFixed(2)}"/>`;
+      if (cw > 34) g += `<text class="c-heat-lab${op > .55 ? ' on' : ''}" x="${cx + (cw-gap)/2}" y="${cy + (ch-gap)/2 + 4}" text-anchor="middle">${Math.round(v*100)}</text>`;
+      if (a === myRow && b === myCol) g += `<rect class="c-heat-you" x="${cx}" y="${cy}" width="${cw - gap}" height="${ch - gap}" rx="5"/>`;
+      if (a === bestC[0] && b === bestC[1]) g += `<rect class="c-heat-best" x="${cx}" y="${cy}" width="${cw - gap}" height="${ch - gap}" rx="5"/>`;
+      g += `<rect class="c-hit" data-a="${a}" data-b="${b}" x="${cx}" y="${cy}" width="${cw - gap}" height="${ch - gap}"/>`;
     });
-    const mx = L + Math.min(23.9, Math.min(row.mark, 1439)/60) * bw;
-    g += `<line class="c-mark" x1="${mx}" x2="${mx}" y1="${row.y + head}" y2="${base}"/>`;
   });
-  [0,6,12,18,23].forEach(h => g += `<text class="c-axis" x="${L + h*bw + bw/2}" y="${H-4}" text-anchor="middle">${String(h).padStart(2,'0')}:00</text>`);
-  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Hourly chance of rain at both airports">${g}</svg>`;
-  note.textContent = fmtDate(s.dt);
-  leg.innerHTML = `<span><i class="sw" style="background:var(--bar)"></i>Rain chance</span><span><i class="sw" style="background:var(--accent)"></i>Storm</span><span><i class="sw" style="background:var(--ink)"></i>Your flight</span>`;
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Delay chance by day and departure time">${g}</svg>`;
+  note.textContent = `Best: ${days[bestC[0]]} ${String(hours[bestC[1]]).padStart(2,'0')}:00`;
+  leg.innerHTML = `<span><i class="sw heat-lo"></i>Low delay</span><span><i class="sw heat-hi"></i>High delay</span><span><i class="sw ring-you"></i>Yours</span><span><i class="sw ring-best"></i>Best</span>`;
   const tip = tipEl(el);
   el.querySelectorAll('.c-hit').forEach(r => {
-    r.addEventListener('pointerenter', () => { const row = rows[+r.dataset.r], w = row.wx[+r.dataset.h];
-      tip.innerHTML = `${String(w.h).padStart(2,'0')}:00 · ${pct(w.p)} rain <span>· ${w.gust} km/h${w.storm ? ' · storm' : ''}</span>`;
-      place(tip, el, W, H, L + w.h*bw + bw/2, row.y + head + rowH - w.p*(rowH - 4)); });
+    r.addEventListener('pointerenter', () => { const a = +r.dataset.a, b = +r.dataset.b;
+      tip.innerHTML = `${days[a]} ${String(hours[b]).padStart(2,'0')}:00 · <b>${Math.round(grid[a][b]*100)}%</b> <span>delay chance</span>`;
+      place(tip, el, W, H, L + b*cw + cw/2, T + a*ch); });
     r.addEventListener('pointerleave', () => tip.hidden = true);
   });
 }
 
 /* ---------- wiring ---------- */
-function update() {
+function update(opts = {}) {
   const s = readState(), err = $('#err');
-  const msg = s.from === s.to ? 'Pick two different airports.' : !s.date || isNaN(s.days) ? 'Pick a date.' : s.days < 0 ? 'Pick a date from today.' : s.days > 60 ? 'Pick a date within 60 days.' : '';
+  const msg = s.from === s.to ? 'Pick two different airports.' : !s.date || isNaN(s.days) ? 'Pick a date.' : s.days < 0 ? 'Pick a date from today.' : s.days > 90 ? 'Pick a date within 3 months.' : '';
   err.hidden = !msg; err.textContent = msg;
   if (msg) return;
   if (trk) cancelAnimationFrame(trk.raf);
+  if (wx) cancelAnimationFrame(wx.raf);
+  showAll = false;
+  if (opts.resetPrice) { s.price = evalFlight(s, s.slot).fare(s.days); $('#price').value = s.price; }
   model = build(s); render(model);
 }
 $('#ask').addEventListener('submit', e => { e.preventDefault(); update(); });
-['#from','#to','#date','#airline'].forEach(id => $(id).addEventListener('change', update));
+['#from','#to','#date','#airline'].forEach(id => $(id).addEventListener('change', () => update({resetPrice: true})));
 let pt; $('#price').addEventListener('input', () => { clearTimeout(pt); pt = setTimeout(update, 350); });
 $('#swap').addEventListener('click', e => {
   const a = $('#from').value; $('#from').value = $('#to').value; $('#to').value = a;
-  $('#from').sync(); $('#to').sync(); e.currentTarget.classList.toggle('spin'); update();
+  $('#from').sync(); $('#to').sync(); e.currentTarget.classList.toggle('spin'); update({resetPrice: true});
 });
 let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => {
-  if (!model) return; drawChart(); syncTabs();
-  initTracker(model);
+  if (!model) return; drawChart(); syncTabs(); initTracker(model);
+  const keep = wx ? {h: wx.hour, on: wx.playing} : null; initRadar(model);
+  if (keep) { wx.hour = keep.h; $('#wxHour').value = keep.h; setPlaying(keep.on); drawRadar(); }
 }, 150); });
 update();
 })();
