@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
 <title>Flymate</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -247,7 +247,7 @@ button:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
 .opt .val.r{color:var(--ink-2);font-weight:700}
 
 /* ---------- tabbed chart ---------- */
-.tabs{position:relative;display:inline-grid;grid-template-columns:repeat(3,auto);padding:4px;border-radius:12px;background:var(--glass-2);border:1px solid var(--border)}
+.tabs{position:relative;display:inline-grid;grid-template-columns:repeat(4,auto);padding:4px;border-radius:12px;background:var(--glass-2);border:1px solid var(--border)}
 .tabs button{position:relative;z-index:1;font:inherit;font-weight:600;font-size:14px;border:0;background:transparent;color:var(--ink-2);padding:7px 14px;border-radius:9px;cursor:pointer;transition:color .3s}
 .tabs button[aria-selected="true"]{color:var(--on-accent)}
 .tab-ind{position:absolute;top:4px;bottom:4px;left:0;border-radius:9px;background:var(--accent);transition:transform .4s var(--ease),width .4s var(--ease)}
@@ -358,6 +358,47 @@ button:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
 .cal-foot .muted{margin-left:auto;color:var(--ink-3)}
 .tag.sale{background:var(--good-bg);color:var(--good)}
 .hol-chip{font-family:var(--f);font-weight:700;color:var(--warn)}
+
+/* weather tab */
+.wxt{display:flex;flex-direction:column;gap:14px}
+.wxt-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (max-width:760px){.wxt-grid{grid-template-columns:minmax(0,1fr)}}
+.wxi{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;color:var(--ink-2)}
+.wxi.lg{width:40px;height:40px;color:var(--ink)}
+.wxi.sm{width:18px;height:18px}
+.wxc{padding:18px;border-radius:16px;background:var(--glass-2);border:1px solid var(--border);display:flex;flex-direction:column;gap:12px;min-width:0}
+.wxc-top{display:flex;align-items:center;gap:12px}
+.wxc-name{display:flex;flex-direction:column;min-width:0;flex:1}
+.wxc-name b{font-size:17px}
+.wxc-name span{font-size:13px;color:var(--ink-2);font-weight:600}
+.wxc-t{text-align:right;display:flex;flex-direction:column}
+.wxc-t b{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1}
+.wxc-t span{font-size:12px;color:var(--ink-2);font-weight:600}
+.wxc-status{padding:10px 14px;border-radius:12px;font-weight:700;font-size:14px;border:1px solid currentColor}
+.wxc-chips{display:flex;flex-wrap:wrap;gap:8px}
+.wxc-chips span{padding:5px 12px;border-radius:999px;border:1px solid var(--border);background:var(--glass);font-size:13px;color:var(--ink-2);font-weight:600}
+.wxc-chips b{color:var(--ink)}
+.wxc-more{align-self:flex-start;font:inherit;font-size:13px;font-weight:600;padding:6px 14px;min-height:32px;border-radius:999px;border:1px solid var(--border);background:var(--glass);color:var(--ink);cursor:pointer;transition:background-color .2s}
+.wxc-more:hover{background:var(--accent-soft)}
+.wxc-hours[hidden]{display:none}
+.wxc-hours{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:2px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;animation:fade .3s var(--ease)}
+.wxc-hours::-webkit-scrollbar{display:none}
+.wxh{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 2px;border-radius:10px;font-size:11.5px;color:var(--ink-2);font-variant-numeric:tabular-nums;min-width:0}
+.wxh b{font-size:14px;color:var(--ink)}
+.wxh.head{align-items:flex-start;color:var(--ink-3);font-weight:700}
+.wxh.head span:nth-child(2){height:18px}
+.wxh.on{background:var(--accent-soft);color:var(--ink)}
+.wxs{padding:16px 18px;border-radius:16px;background:var(--glass-2);border:1px solid var(--border);min-width:0}
+.wxs-h{margin:0 0 12px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.wxs-row{display:grid;grid-template-columns:repeat(7,minmax(50px,1fr));gap:6px;overflow-x:auto;scrollbar-width:none}
+.wxs-row::-webkit-scrollbar{display:none}
+.wxd{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px;border-radius:12px;border:1px solid transparent;background:var(--glass);font:inherit;color:var(--ink);cursor:pointer;transition:background-color .2s,transform .2s var(--ease),border-color .2s}
+.wxd:hover{transform:translateY(-2px);border-color:var(--border)}
+.wxd.on{background:var(--accent-soft);border-color:var(--accent);cursor:default;transform:none}
+.wxd .wd{font-size:12px;font-weight:700;color:var(--ink-2)}
+.wxd b{font-size:16px;font-weight:800}
+.wxd .lo{font-size:13px;color:var(--ink-2);font-weight:600}
+.wxd .rp{font-size:11px;color:var(--ink-3);font-weight:600;white-space:nowrap}
 .foot{text-align:center;font-size:12px;color:var(--ink-2)}
 .fade{animation:fade .45s var(--ease) both}
 @keyframes fade{from{opacity:.35;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -875,6 +916,7 @@ function render(m) {
           <button role="tab" data-tab="price">Price</button>
           <button role="tab" data-tab="delays">Delays</button>
           <button role="tab" data-tab="best">Best time</button>
+          <button role="tab" data-tab="weather">Weather</button>
         </div>
         <div class="copt"><span class="cnote" id="cnote"></span><div id="chartOpt"></div></div>
       </div>
@@ -1269,7 +1311,8 @@ function drawChart() {
   else if (tab === 'delays') {
     makeSeg(optBox, [{k:12, label:'12 wk'}, {k:26, label:'26 wk'}], histWeeks, k => { histWeeks = k; drawChart(); });
     drawDelays(el, W, note, leg);
-  } else drawBest(el, W, note, leg);
+  } else if (tab === 'best') drawBest(el, W, note, leg);
+  else drawWeatherTab(el, note, leg);
   el.classList.remove('fade'); void el.offsetWidth; el.classList.add('fade');
 }
 
@@ -1360,6 +1403,69 @@ function drawDelays(el, W, note, leg) {
       place(tip, el, W, H, L + i*bw + bw/2, y(h.cancelled ? max : Math.max(2, h.mins))); });
     r.addEventListener('pointerleave', () => tip.hidden = true);
   });
+}
+
+// ---------- weather tab: one card per airport + 7-day outlook ----------
+const WX_ICON = {
+  sunny: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/>',
+  cloudy: '<path d="M8.5 6.6A3.5 3.5 0 0 1 14.6 6"/><path d="M7 18h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6.2 10.1 3.95 3.95 0 0 0 7 18z"/>',
+  showers: '<path d="M7.5 4.5v1.2M3.8 8.2H5M4.9 5.3l.9.9"/><path d="M6.4 9.3a3 3 0 0 1 4.3-2.6"/><path d="M8 15h9a3.6 3.6 0 0 0 .4-7.2A5.4 5.4 0 0 0 7.3 7.7 3.7 3.7 0 0 0 8 15z"/><path d="M10 18l-.8 2M14 18l-.8 2"/>',
+  heavy: '<path d="M7 14h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6.2 6.1 3.95 3.95 0 0 0 7 14z"/><path d="M8 17l-1.2 3M12 17l-1.2 3M16 17l-1.2 3"/>',
+  storm: '<path d="M7 14h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6.2 6.1 3.95 3.95 0 0 0 7 14z"/><path d="M12.5 15.5 10.5 19h3l-2 3.5"/>',
+};
+const wxIcon = (k, cls = '') => `<svg class="wxi ${cls}" viewBox="0 0 24 24" aria-hidden="true">${WX_ICON[k]}</svg>`;
+function dayWx(code, dateStr) {
+  const w = weather(code, dateStr), pmax = Math.max(...w.map(x => x.p)), storm = w.filter(x => x.storm).length >= 5 && pmax > .9;
+  const a = AIRPORTS[code], mo = +dateStr.slice(5, 7), r = rng(hash('t' + code + dateStr));
+  const north = a.lat > 12 ? (a.lat - 12) * .45 + (a.lat > 18 ? ({11:3, 12:6, 1:7}[mo] || 0) : 0) : 0;
+  const hi = Math.round(32.6 + (r() - .5) * 2.4 - north - pmax * 1.5), lo = Math.round(25 + (r() - .5) * 1.6 - north * 1.1);
+  const kind = storm ? 'storm' : pmax > .8 ? 'heavy' : pmax > .62 ? 'showers' : pmax > .42 ? 'cloudy' : 'sunny';
+  return {w, pmax: Math.min(.9, pmax), hi, lo, kind, label: {storm:'Thunderstorms', heavy:'Heavy rain', showers:'Some showers', cloudy:'Cloudy', sunny:'Mostly sunny'}[kind]};
+}
+const hourKind = x => x.storm && x.p > .75 ? 'storm' : x.p > .75 ? 'heavy' : x.p > .55 ? 'showers' : x.p > .35 ? 'cloudy' : 'sunny';
+function drawWeatherTab(el, note, leg) {
+  const {s, cur} = model;
+  const ends = [
+    {code:s.from, when:cur.dep, lab:'at take-off', c:cur.contrib.depWx, at:cur.dw},
+    {code:s.to, when:cur.arr, lab:'at landing', c:cur.contrib.arrWx, at:cur.aw},
+  ];
+  const cards = ends.map(e => {
+    const d = dayWx(e.code, s.date), st = e.c < .03 ? ['good', 'Calm skies · on time likely'] : e.c < .1 ? ['warn', 'A bit rough · small delay chance'] : ['bad', 'Stormy · delays likely'];
+    const h0 = Math.min(20, Math.max(0, Math.round(e.when / 60) - 3));
+    const hours = d.w.slice(h0, h0 + 7).map(x => {
+      const t = Math.round(d.lo + (d.hi - d.lo) * Math.exp(-((x.h - 14) ** 2) / 20) - x.p * 1.5), mine = x.h === Math.min(23, Math.round(e.when / 60));
+      return `<div class="wxh${mine ? ' on' : ''}"><span>${String(x.h).padStart(2, '0')}:00</span>${wxIcon(hourKind(x), 'sm')}<b>${t}°</b><span>${pct(x.p)}</span><span>${x.gust}</span></div>`;
+    }).join('');
+    return `<article class="wxc">
+      <div class="wxc-top">${wxIcon(d.kind, 'lg')}<div class="wxc-name"><b>${AIRPORTS[e.code].name}</b><span>${d.label}</span></div><div class="wxc-t"><b>${d.hi}°</b><span>${d.lo}° low</span></div></div>
+      <div class="wxc-status ${st[0]}">${st[1]}</div>
+      <div class="wxc-chips"><span>Wind <b>${e.at.gust} km/h</b></span><span>Rain <b>${pct(e.at.p)}</b></span><span>${e.lab} ${hhmm(e.when)}</span></div>
+      <button type="button" class="wxc-more" aria-expanded="false">Show the numbers</button>
+      <div class="wxc-hours" hidden><div class="wxh head"><span>Time</span><span></span><b>Temp</b><span>Rain</span><span>km/h</span></div>${hours}</div>
+    </article>`;
+  }).join('');
+  const strip = code => {
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const dt = addDays(s.dt, i); if (dt > addDays(TODAY, 90)) break;
+      const v = iso(dt), d = dayWx(code, v);
+      days.push(`<button type="button" class="wxd${i === 0 ? ' on' : ''}" data-date="${v}" aria-label="${dt.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'short'})}: ${d.label}, ${d.hi}°, ${pct(d.pmax)} rain">
+        <span class="wd">${dt.toLocaleDateString('en-GB', {weekday:'short'}).toUpperCase()}</span>${wxIcon(d.kind)}<b>${d.hi}°</b><span class="lo">${d.lo}°</span><span class="rp">${pct(d.pmax)} rain</span></button>`);
+    }
+    return `<section class="wxs"><p class="wxs-h">${AIRPORTS[code].name} · 7-day forecast</p><div class="wxs-row">${days.join('')}</div></section>`;
+  };
+  el.innerHTML = `<div class="wxt"><div class="wxt-grid">${cards}</div><div class="wxt-grid">${strip(s.from)}${strip(s.to)}</div></div>`;
+  note.textContent = 'Simulated forecast';
+  leg.innerHTML = '<span>Tap a day to check that date</span>';
+  el.querySelectorAll('.wxc-more').forEach(b => b.addEventListener('click', () => {
+    const box = b.nextElementSibling, open = box.hidden; box.hidden = !open;
+    b.setAttribute('aria-expanded', open); b.textContent = open ? 'Hide the numbers' : 'Show the numbers';
+  }));
+  el.querySelectorAll('.wxd:not(.on)').forEach(b => b.addEventListener('click', () => {
+    $('#date').value = b.dataset.date; $('#dateVal').textContent = new Date(b.dataset.date + 'T00:00').toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'});
+    update({resetPrice: true});
+    requestAnimationFrame(() => $('#chart')?.scrollIntoView({block:'center'}));
+  }));
 }
 
 // delay chance by weekday and departure hour, averaged over the next 3 weeks
