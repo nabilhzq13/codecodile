@@ -399,6 +399,42 @@ button:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
 .wxd b{font-size:16px;font-weight:800}
 .wxd .lo{font-size:13px;color:var(--ink-2);font-weight:600}
 .wxd .rp{font-size:11px;color:var(--ink-3);font-weight:600;white-space:nowrap}
+
+/* urgency */
+.urg{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.urg-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;font-size:13px;font-weight:600;color:var(--ink-2);background:var(--glass-2);border:1px solid var(--border)}
+.urg-chip svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.urg-chip b{color:var(--ink);font-variant-numeric:tabular-nums}
+.urg-chip.hot{color:var(--bad);background:var(--bad-bg);border-color:transparent}
+.urg-chip.hot b{color:var(--bad)}
+/* receipt */
+.proof-h{font-size:20px!important;font-weight:800!important;margin:4px 0 14px!important;letter-spacing:-.02em}
+.rc-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.rc-cols.one{grid-template-columns:minmax(0,1fr)}
+.rc-col{padding:14px;border-radius:14px;background:var(--glass-2);border:1px dashed var(--line);font-variant-numeric:tabular-nums;min-width:0}
+.rc-title{margin:0;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.rc-flight{margin:2px 0 10px;font-weight:700;font-size:14px}
+.rc-line,.rc-total{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:6px 0;font-size:14px;color:var(--ink-2)}
+.rc-line{border-bottom:1px dashed var(--line)}
+.rc-line small{display:block;font-size:11px;color:var(--ink-3)}
+.rc-line b{color:var(--ink);font-family:var(--mono);font-weight:500}
+.rc-total{padding-top:10px;font-weight:700;color:var(--ink)}
+.rc-total b{font-size:20px;font-weight:800}
+.rc-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;padding:10px 14px;border-radius:12px;font-weight:600;font-size:14px}
+.rc-foot.good{color:var(--good);background:var(--good-bg)}
+.rc-foot.warn{color:var(--warn);background:var(--warn-bg)}
+@media (max-width:420px){.rc-cols{grid-template-columns:minmax(0,1fr)}}
+/* backtest */
+.proof-nums{display:flex;gap:28px;flex-wrap:wrap;margin-bottom:6px}
+.proof-nums span{font-size:13px;font-weight:600;color:var(--ink-2)}
+.proof-big{font-size:38px;font-weight:800;letter-spacing:-.03em;line-height:1.05;font-variant-numeric:tabular-nums}
+.proof-big.tone-good{color:var(--good)} .proof-big.tone-bad{color:var(--bad)}
+.bt-fm{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linejoin:round}
+.bt-rnd{fill:none;stroke:var(--ink-3);stroke-width:2;stroke-dasharray:5 4}
+.bt-gap{stroke:var(--good);stroke-width:2}
+.bt-dot{fill:var(--accent);stroke:var(--tip);stroke-width:2}
+.bt-dot-r{fill:var(--ink-3);stroke:var(--tip);stroke-width:2}
+.legend .trust{margin-left:auto;color:var(--ink)}
 .foot{text-align:center;font-size:12px;color:var(--ink-2)}
 .fade{animation:fade .45s var(--ease) both}
 @keyframes fade{from{opacity:.35;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -751,7 +787,7 @@ function build(s) {
   // every option that day: 3 times x up to 3 airlines; yours is priced at what you see
   const flights = [];
   carriers(s).forEach(c => slotKeys.forEach(k => flights.push(k === s.slot && c === s.airline ? cur : evalFlight(s, k, c))));
-  flights.forEach(f => { f.price = f === cur ? s.price : f.fare(s.days); f.total = f.price + f.p * DELAY_COST; });
+  flights.forEach(f => { f.price = f === cur ? s.price : f.fare(s.days); f.delayCost = Math.round(f.p * DELAY_COST); f.ride = rideSurge(f); f.total = f.price + f.delayCost + f.ride; });
   const best = flights.slice().sort((a, b) => a.total - b.total)[0];
   const hist = history(s, cur, 26), last12 = hist.slice(-12), lateN = last12.filter(h => h.late).length;
   const fair = cur.fare(s.days), ratio = s.price / fair;
@@ -799,7 +835,42 @@ function build(s) {
   if (ratio > 1.08) reasons.push({t:'Above fair price', v:`+RM ${s.price - fair}`, l:'bad',
     a:`Aim for RM ${fair} or compare airlines`, act:'sort:price', btn:'Cheapest'});
 
-  return {s, cur, flights, best: sw || cur, hist, lateN, fair, ratio, rise, big, sub, subCls, reasons};
+  // urgency: when the fare next steps up, and how many seats are left at this price (simulated inventory)
+  const ru = rng(hash(cur.flightNo + s.date + 'urg'));
+  const riseInH = s.days <= 1 ? 0 : s.days > 18 ? (s.days - 18) * 24 - new Date().getHours() : 6 + Math.floor(ru() * 34);
+  const riseAt = Date.now() + Math.max(1, riseInH) * 3600e3 - Math.floor(ru() * 3600e3);
+  const dow = s.dt.getDay(), seats = cur.hol || cur.promo ? 2 + Math.floor(ru() * 4) : (dow === 5 || dow === 0) ? 4 + Math.floor(ru() * 6) : 6 + Math.floor(ru() * 10);
+  // receipt: compare yours with Flymate's pick, or with the flight that only looks cheapest
+  const cheapLook = flights.filter(f => f !== cur).sort((a, b) => a.price - b.price)[0];
+  const rival = sw || (cheapLook && cheapLook.price < cur.price && cheapLook.total > cur.total ? cheapLook : null);
+  return {s, cur, flights, best: sw || cur, hist, lateN, fair, ratio, rise, big, sub, subCls, reasons, riseAt, seats, rival, rivalKind: sw ? 'pick' : 'cheap', bt: backtest(s)};
+}
+
+// landing late at night means surge pricing on the ride home; a delay makes it more likely
+function rideSurge(f) {
+  const end = f.arr + f.p * 45;
+  return end >= 22 * 60 ? Math.round(16 + 24 * Math.min(1, (end - 22 * 60) / 120)) : 0;
+}
+// replay the last 13 weeks on this route: Flymate's pick vs a traveller who books a random flight on a random day
+function backtest(s) {
+  let d = addDays(TODAY, -1); while (d.getDay() !== s.dt.getDay()) d = addDays(d, -1);
+  const trips = []; let right = 0, total = 0;
+  for (let k = 12; k >= 0; k--) {
+    const day = addDays(d, -7 * k), s2 = {...s, date: iso(day), dt: day, days: 20};
+    const opts = [];
+    carriers(s2).forEach(c => slotKeys.forEach(sk => {
+      const f = evalFlight(s2, sk, c), r = rng(hash(f.flightNo + iso(day) + 'actual'));
+      const late = r() < f.p, actual = (late ? DELAY_COST : 0) + (late ? rideSurge({...f, p: 1}) : rideSurge({...f, p: 0}));
+      opts.push({f, late, actual, score: f.fare(20) + Math.round(f.p * DELAY_COST) + rideSurge(f)});
+      total++; if ((f.p >= .45) === late) right++;
+    }));
+    const pick = opts.slice().sort((a, b) => a.score - b.score)[0];
+    const own = opts.filter(o => o.f.airline === s.airline), rr = rng(hash(s.from + s.to + iso(day) + 'random')), rand = own[Math.floor(rr() * own.length)], bookDay = 7 + Math.floor(rr() * 29);
+    trips.push({day, fm: pick.f.fare(20) + pick.actual, rnd: rand.f.fare(bookDay) + rand.actual, fmLate: pick.late, rndLate: rand.late, fmF: pick.f, rndF: rand.f});
+  }
+  const saved = trips.reduce((a, t) => a + t.rnd - t.fm, 0);
+  const dodged = trips.filter(t => t.rndLate).length - trips.filter(t => t.fmLate).length;
+  return {trips, saved: Math.round(saved), dodged, acc: right / total};
 }
 
 /* ---------- number tween ---------- */
@@ -826,6 +897,65 @@ const PLANE_SVG = `<svg viewBox="0 0 64 64" aria-hidden="true">
   <path d="M30.4 7.2 Q32 5.8 33.6 7.2 L33.3 8.8 Q32 8 30.7 8.8 Z" fill="#1b2540"/>
 </svg>`;
 
+let cdTimer = 0;
+function startCountdown(m) {
+  clearInterval(cdTimer);
+  const el = $('#cdown'); if (!el) return;
+  const tick = () => {
+    const ms = Math.max(0, m.riseAt - Date.now()), d = Math.floor(ms / 864e5), h = Math.floor(ms / 36e5) % 24, mi = Math.floor(ms / 6e4) % 60, se = Math.floor(ms / 1e3) % 60;
+    el.textContent = `${d ? d + 'd ' : ''}${String(h).padStart(2, '0')}:${String(mi).padStart(2, '0')}:${String(se).padStart(2, '0')}`;
+  };
+  tick(); cdTimer = setInterval(tick, 1000);
+}
+function receiptHTML(m) {
+  const {cur, rival} = m;
+  const col = (f, title) => `<div class="rc-col">
+      <p class="rc-title">${title}</p><p class="rc-flight">${hhmm(f.dep)} · ${AIRLINES[f.airline].name}</p>
+      <div class="rc-line"><span>Fare</span><b>RM ${f.price}</b></div>
+      <div class="rc-line"><span>Delay risk <small>${pct(f.p)} × RM ${DELAY_COST}</small></span><b>RM ${f.delayCost}</b></div>
+      <div class="rc-line"><span>Late-night ride</span><b>${f.ride ? 'RM ' + f.ride : '–'}</b></div>
+      <div class="rc-total"><span>Real cost</span><b>RM ${Math.round(f.total)}</b></div>
+    </div>`;
+  let foot = '';
+  if (rival) {
+    const diff = Math.round(cur.total - rival.total);
+    foot = m.rivalKind === 'pick'
+      ? `<div class="rc-foot good"><span>Same trip, <b>RM ${diff} less</b></span><button type="button" class="move-btn" id="rcSwitch">Switch</button></div>`
+      : `<div class="rc-foot warn"><span>The RM ${rival.price} fare really costs <b>RM ${-diff} more</b></span></div>`;
+  } else foot = `<div class="rc-foot good"><span>Your flight is already the best value</span></div>`;
+  return `<section class="card panel receipt" aria-label="Real cost">
+    <p class="label">Real cost</p><h2 class="proof-h">What you actually pay</h2>
+    <div class="rc-cols${rival ? '' : ' one'}">${col(cur, 'Yours')}${rival ? col(rival, m.rivalKind === 'pick' ? 'Flymate pick' : 'Cheapest fare') : ''}</div>
+    ${foot}
+  </section>`;
+}
+function drawBacktest(m) {
+  const el = $('#btChart'); if (!el) return;
+  const tr = m.bt.trips, W = Math.max(260, el.clientWidth), H = 150, L = 44, R = 12, T = 12, B = 22;
+  let a = 0, b = 0; const fm = [], rd = [];
+  tr.forEach(t => { a += t.fm; b += t.rnd; fm.push(a); rd.push(b); });
+  const max = Math.max(...rd, ...fm), step = niceStep(max / 3), y1 = Math.ceil(max / step) * step;
+  const x = i => L + i / (tr.length - 1) * (W - L - R), y = v => T + (1 - v / y1) * (H - T - B);
+  const line = arr => arr.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
+  let g = '';
+  for (let v = 0; v <= y1 + 1e-6; v += step) g += `<line class="c-grid" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text class="c-axis" x="${L-6}" y="${y(v)+4}" text-anchor="end">${v >= 1000 ? (v/1000) + 'k' : v}</text>`;
+  [0, 6, 12].forEach(i => g += `<text class="c-axis" x="${x(i)}" y="${H-6}" text-anchor="${i === 0 ? 'start' : i === 12 ? 'end' : 'middle'}">${fmtDate(tr[i].day)}</text>`);
+  const gap = `M${x(12)},${y(rd[12])}L${x(12)},${y(fm[12])}`;
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Total spent over 13 trips: Flymate RM ${Math.round(a)} vs random RM ${Math.round(b)}">
+    ${g}<path class="bt-rnd" d="${line(rd)}"/><path class="bt-fm" d="${line(fm)}"/>
+    <path class="bt-gap" d="${gap}"/>
+    <circle class="bt-dot-r" cx="${x(12)}" cy="${y(rd[12])}" r="4"/><circle class="bt-dot" cx="${x(12)}" cy="${y(fm[12])}" r="4.5"/>
+    ${tr.map((t, i) => `<rect class="c-hit" data-i="${i}" x="${x(i) - (W - L - R) / 26}" y="${T}" width="${(W - L - R) / 13}" height="${H - T - B}"/>`).join('')}
+  </svg>`;
+  const tip = tipEl(el);
+  el.querySelectorAll('.c-hit').forEach(r => {
+    r.addEventListener('pointerenter', () => { const i = +r.dataset.i, t = tr[i];
+      tip.innerHTML = `${fmtDate(t.day)} · Flymate <b>RM ${Math.round(t.fm)}</b>${t.fmLate ? ' (late)' : ''} <span>vs RM ${Math.round(t.rnd)}${t.rndLate ? ' (late)' : ''}</span>`;
+      place(tip, el, W, H, x(i), y(fm[i])); });
+    r.addEventListener('pointerleave', () => tip.hidden = true);
+  });
+}
+
 function render(m) {
   const {s, cur} = m;
   const dCls = cur.p >= .45 ? 'bad' : cur.p >= .2 ? 'warn' : 'good', dWord = {bad:'High', warn:'Medium', good:'Low'}[dCls];
@@ -839,6 +969,10 @@ function render(m) {
         <p class="label">Flymate says</p>
         <h1 class="big">${m.big}</h1>
         <p class="sub tone-${m.subCls}">${m.sub}</p>
+        <div class="urg">
+          ${s.days > 1 ? `<span class="urg-chip ${m.riseAt - Date.now() < 48 * 3600e3 ? 'hot' : ''}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg>Price rises in <b id="cdown">--</b></span>` : ''}
+          <span class="urg-chip ${m.seats <= 5 ? 'hot' : ''}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4v10a2 2 0 0 0 2 2h8M6 20h12M16 16v4M8 4h2"/></svg><b>${m.seats}</b> seats left at this price</span>
+        </div>
         <div class="flight">${cur.flightNo} · ${s.from} ${hhmm(cur.dep)} → ${s.to} ${hhmm(cur.arr)} · ${fmtDate(s.dt)}${cur.hol ? ` · <b class="hol-chip">${cur.hol.label}</b>` : ''}</div>
       </div>
       <div class="stats">
@@ -847,6 +981,20 @@ function render(m) {
         <div class="stat"><p class="label">In 7 days</p><div class="num tone-${rCls}" id="nRise"></div><span class="pill ${rCls}">${m.rise > 0 ? '+' + Math.round(m.rise/m.fair*100) + '%' : 'No change'}</span></div>
       </div>
     </section>
+
+    <div class="two fade">
+      ${receiptHTML(m)}
+      <section class="card panel proof" aria-label="Backtest">
+        <p class="label">If you flew this route every ${s.dt.toLocaleDateString('en-GB', {weekday:'long'})} for 13 weeks</p>
+        <h2 class="proof-h">Flymate would have saved you</h2>
+        <div class="proof-nums">
+          <div><div class="proof-big ${m.bt.saved >= 0 ? 'tone-good' : 'tone-bad'}" id="btSaved">RM 0</div><span>saved</span></div>
+          <div><div class="proof-big" id="btDodged">0</div><span>delays dodged</span></div>
+        </div>
+        <div class="chart" id="btChart" style="min-height:150px"></div>
+        <div class="legend"><span><i class="sw" style="background:var(--accent)"></i>Following Flymate</span><span><i class="sw" style="background:var(--ink-3)"></i>Usual way</span><span class="trust">Called delays right <b>${Math.round(m.bt.acc * 100)}%</b> of the time</span></div>
+      </section>
+    </div>
 
     <section class="trk fade" aria-label="Simulated flight preview">
       <div class="trk-map" id="trkMap">
@@ -926,6 +1074,15 @@ function render(m) {
   </div>`;
 
   tween($('#nDelay'), 'delay', cur.p * 100, v => Math.round(v) + '%');
+  prevNums.saved = 0; prevNums.dodged = 0;
+  tween($('#btSaved'), 'saved', m.bt.saved, v => (v < 0 ? '−RM ' : 'RM ') + spaced(Math.abs(v)));
+  tween($('#btDodged'), 'dodged', Math.max(0, m.bt.dodged), v => String(Math.round(v)));
+  drawBacktest(m);
+  startCountdown(m);
+  $('#rcSwitch')?.addEventListener('click', () => {
+    const f = m.rival; $('#slot').value = f.slotKey; segDep.set(f.slotKey);
+    $('#airline').value = f.airline; $('#airline').sync(); $('#price').value = f.price; update(); window.scrollTo({top: 0, behavior: reduced ? 'auto' : 'smooth'});
+  });
   tween($('#nFair'), 'fair', m.fair, v => '<small>RM</small>' + Math.round(v));
   if (m.rise > 0) tween($('#nRise'), 'rise', m.rise, v => '<small>+RM</small>' + Math.round(v)); else { $('#nRise').textContent = 'Flat'; prevNums.rise = 0; }
 
@@ -991,6 +1148,7 @@ let trk = null;
 function initTracker(m) {
   const map = $('#trkMap'), cv = $('#trkCanvas'), A = AIRPORTS[m.s.from], B = AIRPORTS[m.s.to];
   const W = map.clientWidth, H = map.clientHeight, dpr = Math.min(2, devicePixelRatio || 1);
+  if (!W || !H) { setTimeout(() => model === m && initTracker(m), 300); return; }
   cv.width = W * dpr; cv.height = H * dpr;
   const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   const lonMin = Math.min(A.lon, B.lon), lonMax = Math.max(A.lon, B.lon), latMin = Math.min(A.lat, B.lat), latMax = Math.max(A.lat, B.lat);
@@ -1102,6 +1260,7 @@ let wx = null;
 function initRadar(m) {
   const box = $('#wxMap'), cv = $('#wxCanvas'), A = AIRPORTS[m.s.from], B = AIRPORTS[m.s.to];
   const W = box.clientWidth, H = box.clientHeight, dpr = Math.min(2, devicePixelRatio || 1);
+  if (!W || !H) { setTimeout(() => model === m && initRadar(m), 300); return; }
   cv.width = W * dpr; cv.height = H * dpr;
   const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   const lonMin = Math.min(A.lon, B.lon), lonMax = Math.max(A.lon, B.lon), latMin = Math.min(A.lat, B.lat), latMax = Math.max(A.lat, B.lat);
