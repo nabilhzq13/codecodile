@@ -1,0 +1,956 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Flymate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* Layout: search bar → verdict with three numbers → flight tracker (dot map + progress) → reasons | flights → tabbed chart */
+:root{
+  --bg:#9cc1ec; --sky-a:#5d8fdc; --sky-b:#a8cbf0; --sky-c:#f3cfb6; --blob1:rgba(120,200,255,.75); --blob2:rgba(255,190,150,.7); --blob3:rgba(170,150,255,.45);
+  --glass:rgba(255,255,255,.2); --glass-2:rgba(255,255,255,.28);
+  --border:rgba(255,255,255,.5); --shadow:rgba(20,40,80,.12); --tip:rgba(255,255,255,.9);
+  --ink:#0f1b2d; --ink-2:#2f4058; --ink-3:#4c5f78; --line:rgba(15,27,45,.12);
+  --accent:#1a44c2; --accent-soft:rgba(26,68,194,.16); --on-accent:#ffffff;
+  --bar:rgba(15,27,45,.22);
+  --good:#12805a; --good-bg:rgba(18,128,90,.11);
+  --warn:#a36600; --warn-bg:rgba(200,135,0,.14);
+  --bad:#c8392d; --bad-bg:rgba(200,57,45,.1);
+  /* tracker keeps one night-sky look in both themes */
+  --trk-bg:rgba(8,13,30,.8); --trk-panel:rgba(255,255,255,.05); --trk-border:rgba(255,255,255,.1);
+  --trk-ink:#eef3ff; --trk-ink-2:#8d9abb; --trk-dot:#7cc4ff;
+  --trk-a:#38bdf8; --trk-b:#8b5cf6; --trk-c:#ec4899;
+  --trk-good:#4fd1a0; --trk-warn:#fbbf4a; --trk-bad:#ff7a6e;
+  --f:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0a1226; --sky-a:#070d1d; --sky-b:#13244a; --sky-c:#3a2540; --blob1:rgba(60,110,230,.45); --blob2:rgba(230,120,90,.3); --blob3:rgba(140,90,230,.35);
+  --glass:rgba(255,255,255,.06); --glass-2:rgba(255,255,255,.09);
+  --border:rgba(255,255,255,.14); --shadow:rgba(0,0,0,.3); --tip:rgba(16,26,48,.94);
+  --ink:#eaf0f8; --ink-2:#9aabc0; --ink-3:#6f8197; --line:rgba(255,255,255,.08);
+  --accent:#7ea3ff; --accent-soft:rgba(126,163,255,.14); --on-accent:#0b1220;
+  --bar:rgba(255,255,255,.22);
+  --good:#4fcb95; --good-bg:rgba(79,203,149,.13);
+  --warn:#f0b44a; --warn-bg:rgba(240,180,74,.14);
+  --bad:#ff7468; --bad-bg:rgba(255,116,104,.13);
+  --trk-bg:rgba(6,10,24,.72);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0a1226; --sky-a:#070d1d; --sky-b:#13244a; --sky-c:#3a2540; --blob1:rgba(60,110,230,.45); --blob2:rgba(230,120,90,.3); --blob3:rgba(140,90,230,.35);
+  --glass:rgba(255,255,255,.06); --glass-2:rgba(255,255,255,.09);
+  --border:rgba(255,255,255,.14); --shadow:rgba(0,0,0,.3); --tip:rgba(16,26,48,.94);
+  --ink:#eaf0f8; --ink-2:#9aabc0; --ink-3:#6f8197; --line:rgba(255,255,255,.08);
+  --accent:#7ea3ff; --accent-soft:rgba(126,163,255,.14); --on-accent:#0b1220;
+  --bar:rgba(255,255,255,.22);
+  --good:#4fcb95; --good-bg:rgba(79,203,149,.13);
+  --warn:#f0b44a; --warn-bg:rgba(240,180,74,.14);
+  --bad:#ff7468; --bad-bg:rgba(255,116,104,.13);
+  --trk-bg:rgba(6,10,24,.72);
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f);font-size:15px;line-height:1.45;min-height:100vh;-webkit-font-smoothing:antialiased}
+.bgfx{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(40vw 34vw at 8% 6%,var(--blob1),transparent 70%),radial-gradient(42vw 36vw at 96% 92%,var(--blob2),transparent 70%),radial-gradient(30vw 26vw at 70% 18%,var(--blob3),transparent 70%),linear-gradient(165deg,var(--sky-a) 0%,var(--sky-b) 55%,var(--sky-c) 100%)}
+.wrap{position:relative;z-index:1;max-width:1040px;margin:0 auto;padding-inline:20px;padding-block:22px 56px;display:flex;flex-direction:column;gap:18px}
+@media (max-width:520px){.wrap{padding-inline:16px}}
+
+.card{background:var(--glass);-webkit-backdrop-filter:blur(24px) saturate(170%);backdrop-filter:blur(24px) saturate(170%);
+  border:1px solid var(--border);border-radius:20px;box-shadow:0 8px 32px var(--shadow),inset 0 1px 0 var(--border)}
+
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:20px;letter-spacing:-.01em}
+.brand svg{width:22px;height:22px;fill:var(--accent);transform:rotate(45deg)}
+.demo{font-size:12px;font-weight:600;color:var(--ink-2);padding:4px 10px;border-radius:999px;border:1px solid var(--border);background:var(--glass)}
+
+/* ---------- search ---------- */
+.search{position:relative;z-index:20;display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;padding:14px}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1 1 120px;position:relative}
+.f.wide{flex:2 1 250px}
+.f.seg-f{flex:2 1 260px}
+.f > label,.f > .lab{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding-left:4px;transition:color .2s ease}
+.f:focus-within > label,.f:focus-within > .lab{color:var(--accent)}
+.ctl{font:inherit;font-weight:600;color:var(--ink);background:var(--glass-2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;min-height:44px;width:100%;
+  transition:border-color .2s ease,box-shadow .25s ease,background-color .2s ease,transform .2s var(--ease)}
+.ctl:hover{background:var(--glass);border-color:var(--accent-soft)}
+.ctl:focus,.ctl:focus-visible{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.pair{display:flex;align-items:center;gap:6px}
+.pair .dd{flex:1 1 0;min-width:0}
+.swap{flex:none;width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:var(--glass-2);color:var(--ink-2);cursor:pointer;font-size:15px;transition:transform .45s var(--ease),background-color .2s}
+.swap:hover{background:var(--glass)}
+.swap.spin{transform:rotate(180deg)}
+.price{position:relative}
+.price span{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-weight:600;color:var(--ink-3);pointer-events:none}
+.price input{padding-left:40px;padding-right:34px;-moz-appearance:textfield}
+.price input::-webkit-outer-spin-button,.price input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.price .chev{position:absolute;right:14px;top:50%;margin-top:-5px;pointer-events:none}
+.price-dd .dd-list{min-width:max(100%,230px)}
+.price-dd .dd-list .pill{font-size:11px;padding:2px 8px}
+.price-dd.open .ctl{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.price-dd .dd-head{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:6px 10px 4px;cursor:default}
+.btn{font:inherit;font-weight:700;padding:0 22px;min-height:44px;border-radius:12px;border:0;background:var(--accent);color:var(--on-accent);cursor:pointer;flex:0 0 auto;transition:transform .2s var(--ease),filter .2s}
+.btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.btn:active{transform:translateY(0) scale(.98)}
+button:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
+.err{color:var(--bad);font-weight:600;margin:0;padding:0 4px}
+
+/* custom dropdown */
+.dd{position:relative}
+.dd-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;cursor:pointer}
+.dd-btn .v{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dd-btn .v small{font-weight:500;color:var(--ink-3);margin-left:6px}
+.chev{flex:none;width:10px;height:10px;border-right:2px solid var(--ink-3);border-bottom:2px solid var(--ink-3);transform:translateY(-2px) rotate(45deg);transition:transform .3s var(--ease)}
+.dd.open .chev{transform:translateY(2px) rotate(225deg)}
+.dd.open .dd-btn{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.dd-list{position:absolute;z-index:30;top:calc(100% + 6px);left:0;min-width:max(100%,210px);max-height:280px;overflow:auto;margin:0;padding:6px;list-style:none;
+  background:var(--tip);border:1px solid var(--border);border-radius:14px;box-shadow:0 18px 40px var(--shadow);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
+  opacity:0;visibility:hidden;transform:translateY(-6px) scale(.97);transform-origin:top left;
+  transition:opacity .18s ease,transform .26s var(--ease),visibility 0s linear .26s}
+.dd-list{max-height:min(360px,60vh);scrollbar-width:none;-ms-overflow-style:none}
+.dd-list::-webkit-scrollbar{display:none}
+.dd.open .dd-list{opacity:1;visibility:visible;transform:none;transition:opacity .18s ease,transform .26s var(--ease),visibility 0s}
+.dd-list li{display:flex;justify-content:space-between;gap:12px;padding:9px 10px;border-radius:9px;cursor:pointer;font-weight:600;transition:background-color .15s ease,padding-left .2s var(--ease)}
+.dd-list li small{color:var(--ink-3);font-weight:500}
+.dd-list li.active{background:var(--accent-soft);padding-left:14px}
+.dd-list li[aria-selected="true"]{color:var(--accent)}
+
+/* calendar picker */
+.dp .dd-btn .ico{flex:none;width:16px;height:16px;fill:none;stroke:var(--ink-3);stroke-width:2;margin-right:2px}
+.dp .dd-btn .v{flex:1}
+.cal{min-width:292px;max-height:none;overflow:visible;padding:12px}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.cal-head b{font-weight:700}
+.cal-nav{width:32px;height:32px;border-radius:9px;border:0;background:transparent;color:var(--ink);font:inherit;font-size:18px;cursor:pointer;transition:background-color .2s ease,transform .2s var(--ease)}
+.cal-nav:hover:not(:disabled){background:var(--accent-soft)}
+.cal-nav:active:not(:disabled){transform:scale(.92)}
+.cal-nav:disabled{opacity:.3;cursor:default}
+.cal-wd,.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.cal-wd span{font-size:11px;font-weight:700;color:var(--ink-3);padding:4px 0}
+.cal-grid button{height:36px;border:0;border-radius:9px;background:transparent;font:inherit;font-weight:600;color:var(--ink);cursor:pointer;font-variant-numeric:tabular-nums;
+  transition:background-color .18s ease,color .18s ease,transform .2s var(--ease)}
+.cal-grid button:hover:not(:disabled){background:var(--accent-soft);transform:scale(1.08)}
+.cal-grid button.is-today{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.cal-grid button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);animation:pop .32s var(--ease)}
+.cal-grid button:disabled{color:var(--ink-3);opacity:.35;cursor:default}
+.cal-grid button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.cal-grid.slide-l{animation:calL .32s var(--ease)}
+.cal-grid.slide-r{animation:calR .32s var(--ease)}
+@keyframes calL{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
+@keyframes calR{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}
+@keyframes pop{0%{transform:scale(.8)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
+
+/* segmented time of day */
+.seg{position:relative;display:grid;grid-template-columns:repeat(3,1fr);padding:4px;min-height:44px;border-radius:12px;background:var(--glass-2);border:1px solid var(--border)}
+.seg-ind{position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px)/3);border-radius:9px;background:var(--accent);box-shadow:0 4px 14px var(--accent-soft);
+  transform:translateX(calc(var(--i,0) * 100%));transition:transform .4s var(--ease)}
+.seg button{position:relative;z-index:1;font:inherit;font-weight:600;font-size:14px;border:0;background:transparent;color:var(--ink-2);border-radius:9px;cursor:pointer;padding:0 6px;transition:color .3s ease}
+.seg button[aria-checked="true"]{color:var(--on-accent)}
+
+/* ---------- verdict ---------- */
+.verdict{padding:26px 28px;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.6fr);gap:24px;align-items:center}
+@media (max-width:820px){.verdict{grid-template-columns:minmax(0,1fr)}}
+.label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin:0}
+.big{font-size:clamp(30px,4.4vw,42px);font-weight:800;letter-spacing:-.025em;line-height:1.05;margin:6px 0 8px;color:var(--accent);text-wrap:balance}
+.sub{margin:0;font-weight:600;color:var(--ink-2)}
+.flight{margin-top:12px;font-family:var(--mono);font-size:13px;color:var(--ink-3)}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:520px){.stats{grid-template-columns:minmax(0,1fr)}}
+.stat{padding:16px;border-radius:16px;background:var(--glass-2);border:1px solid var(--border);min-width:0}
+.num{font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1.1;margin:6px 0;font-variant-numeric:tabular-nums;white-space:nowrap}
+.num small{font-size:16px;font-weight:700;color:var(--ink-2);margin-right:2px}
+.num.tone-good,.sub.tone-good{color:var(--good)} .num.tone-warn,.sub.tone-warn{color:var(--warn)} .num.tone-bad,.sub.tone-bad{color:var(--bad)}
+.num[class*="tone-"] small{color:inherit}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.pill::before{content:"";flex:none;width:6px;height:6px;border-radius:50%;background:currentColor}
+.stat .pill{white-space:normal;max-width:100%;line-height:1.3}
+.stat .num{overflow:hidden;text-overflow:ellipsis}
+.good{color:var(--good);background:var(--good-bg)}
+.warn{color:var(--warn);background:var(--warn-bg)}
+.bad{color:var(--bad);background:var(--bad-bg)}
+
+/* ---------- tracker ---------- */
+.trk{position:relative;border-radius:22px;overflow:hidden;background:var(--trk-bg);border:1px solid var(--trk-border);color:var(--trk-ink);
+  -webkit-backdrop-filter:blur(24px) saturate(140%);backdrop-filter:blur(24px) saturate(140%);box-shadow:0 14px 40px var(--shadow)}
+.trk-map{position:relative;height:320px}
+@media (max-width:600px){.trk-map{height:270px}}
+.trk-map canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.trk-chip{position:absolute;top:16px;left:16px;display:flex;align-items:center;gap:8px;padding:5px 6px 5px 12px;border-radius:999px;background:var(--trk-panel);border:1px solid var(--trk-border);font-size:11px;font-weight:700;letter-spacing:.08em}
+.trk-chip b{font-family:var(--mono);font-weight:500;letter-spacing:0;padding:3px 9px;border-radius:999px;background:linear-gradient(90deg,var(--trk-a),var(--trk-b));color:#fff}
+.live{width:7px;height:7px;border-radius:50%;background:var(--trk-a);box-shadow:0 0 0 0 var(--trk-a);animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(56,189,248,.6)}70%{box-shadow:0 0 0 8px rgba(56,189,248,0)}100%{box-shadow:0 0 0 0 rgba(56,189,248,0)}}
+.trk-stats{position:absolute;top:16px;right:16px;display:flex;gap:8px}
+.trk-stats div{padding:7px 12px;border-radius:10px;background:var(--trk-panel);border:1px solid var(--trk-border);min-width:84px}
+.trk-stats span{display:block;font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--trk-ink-2)}
+.trk-stats b{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+@media (max-width:600px){.trk-stats{top:56px;left:16px;right:auto}.trk-stats div{min-width:0;padding:5px 9px}.trk-stats b{font-size:12px}}
+.trk-label{position:absolute;padding:8px 12px;border-radius:10px;background:rgba(10,16,36,.75);border:1px solid var(--trk-border);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);white-space:nowrap;transition:left .5s var(--ease),top .5s var(--ease)}
+.trk-label b{display:block;font-size:14px}
+.trk-label span{font-size:12px;color:var(--trk-ink-2)}
+.trk-plane{position:absolute;width:54px;height:54px;margin:-27px 0 0 -27px;pointer-events:none}
+.trk-plane svg{display:block;width:100%;height:100%;filter:drop-shadow(0 9px 6px rgba(0,0,0,.55)) drop-shadow(0 0 10px rgba(124,196,255,.25))}
+@media (max-width:600px){.trk-plane{width:42px;height:42px;margin:-21px 0 0 -21px}}
+.trk-bottom{display:flex;align-items:center;gap:22px;margin:0 14px 14px;padding:18px 22px;border-radius:18px;background:var(--trk-panel);border:1px solid var(--trk-border)}
+@media (max-width:600px){.trk-bottom{gap:14px;padding:14px}}
+.ring{position:relative;flex:none;width:84px;height:84px}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .track{fill:none;stroke:rgba(255,255,255,.1);stroke-width:6}
+.ring .prog{fill:none;stroke:url(#ringGrad);stroke-width:6;stroke-linecap:round}
+.ring .txt{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.ring .txt b{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.ring .txt span{font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--trk-ink-2)}
+@media (max-width:600px){.ring{width:64px;height:64px}.ring .txt b{font-size:15px}}
+.trk-prog{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
+.trk-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.km{font-size:28px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.km span{font-size:15px;font-weight:600;color:var(--trk-ink-2);letter-spacing:0}
+.eta,.trk-row.small{font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--trk-ink-2);text-transform:uppercase}
+.trk-row.small span{font-family:var(--mono);font-weight:500;letter-spacing:.02em}
+.scrub{position:relative;height:6px;border-radius:3px;margin:6px 0;background:rgba(255,255,255,.1)}
+.scrub i{position:absolute;left:0;top:0;bottom:0;width:var(--p,0%);border-radius:3px;background:linear-gradient(90deg,var(--trk-a),var(--trk-b),var(--trk-c))}
+.scrub i::after{content:"";position:absolute;right:-9px;top:50%;width:18px;height:18px;margin-top:-9px;border-radius:50%;background:#fff;box-shadow:0 0 0 5px rgba(139,92,246,.3),0 0 14px rgba(56,189,248,.7)}
+
+
+/* ---------- reasons + options ---------- */
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:820px){.two{grid-template-columns:minmax(0,1fr)}}
+.panel{padding:20px 22px;min-width:0}
+.panel h2{font-size:16px;font-weight:700;margin:0 0 12px;letter-spacing:-.01em}
+.rows{list-style:none;margin:0;padding:0}
+.rows li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.rows li:first-child{border-top:0}
+.why{display:flex;align-items:center;gap:10px;min-width:0;font-weight:600}
+.why i{flex:none;width:8px;height:8px;border-radius:50%}
+.why i.bad{background:var(--bad)} .why i.warn{background:var(--warn)} .why i.good{background:var(--good)}
+.val{font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.opthead,.opt{display:grid;grid-template-columns:minmax(0,1fr) 84px 60px;gap:10px;align-items:center}
+.opthead{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:0 10px 4px}
+.opthead span:nth-child(n+2){text-align:right}
+.opt{width:100%;padding:12px 10px;border:0;border-radius:12px;background:transparent;font:inherit;color:inherit;text-align:left;cursor:pointer;transition:background-color .2s ease,transform .2s var(--ease)}
+.opt:hover{background:var(--glass-2);transform:translateX(2px)}
+.opt .when{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;font-weight:700}
+.opt .when small{font-family:var(--mono);font-weight:500;font-size:13px;color:var(--ink-3)}
+.tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--accent);color:var(--on-accent)}
+.tag.you{background:transparent;color:var(--ink-2);border:1px solid var(--line)}
+.opt .val{text-align:right}
+.opt .val.r{color:var(--ink-2);font-weight:700}
+
+/* ---------- tabbed chart ---------- */
+.tabs{position:relative;display:inline-grid;grid-template-columns:repeat(3,auto);padding:4px;border-radius:12px;background:var(--glass-2);border:1px solid var(--border)}
+.tabs button{position:relative;z-index:1;font:inherit;font-weight:600;font-size:14px;border:0;background:transparent;color:var(--ink-2);padding:7px 14px;border-radius:9px;cursor:pointer;transition:color .3s}
+.tabs button[aria-selected="true"]{color:var(--on-accent)}
+.tab-ind{position:absolute;top:4px;bottom:4px;left:0;border-radius:9px;background:var(--accent);transition:transform .4s var(--ease),width .4s var(--ease)}
+.chead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.cnote{font-size:13px;color:var(--ink-2);font-weight:600}
+.chart{position:relative;width:100%;min-height:220px}
+.chart svg{display:block;width:100%;overflow:visible}
+.c-grid{stroke:var(--line)}
+.c-axis{fill:var(--ink-3);font-size:11px;font-family:var(--f);font-weight:500}
+.c-lab{fill:var(--ink);font-size:12px;font-family:var(--f);font-weight:700}
+.c-lab2{fill:var(--ink-2);font-size:12px;font-family:var(--f);font-weight:600}
+.c-line{fill:none;stroke:var(--accent);stroke-width:2.25;stroke-linejoin:round;stroke-linecap:round}
+.c-past{fill:none;stroke:var(--ink-3);stroke-width:1.5;stroke-dasharray:3 4}
+.c-today{stroke:var(--ink-3);stroke-dasharray:2 3}
+.c-you{fill:var(--tip);stroke:var(--ink);stroke-width:2.5}
+.c-hair{stroke:var(--ink-3)}
+.c-dot{fill:var(--accent);stroke:var(--tip);stroke-width:2}
+.c-bar{fill:var(--bar)}
+.c-late{fill:var(--bad)}
+.c-thr{stroke:var(--bad);stroke-dasharray:4 4;stroke-width:1}
+.c-thr-lab{fill:var(--bad);font-size:11px;font-weight:700;font-family:var(--f)}
+.c-rain{fill:var(--bar)}
+.c-storm{fill:var(--accent)}
+.c-mark{stroke:var(--ink);stroke-width:1.5}
+.c-hit{fill:transparent}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:12px;font-weight:600;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:10px;height:10px;border-radius:3px}
+.tip{position:absolute;z-index:5;pointer-events:none;padding:7px 10px;border-radius:10px;font-size:12.5px;font-weight:600;color:var(--ink);background:var(--tip);border:1px solid var(--border);box-shadow:0 6px 20px var(--shadow);white-space:nowrap;transform:translate(-50%,calc(-100% - 10px))}
+.tip span{color:var(--ink-2);font-weight:500}
+.foot{text-align:center;font-size:12px;color:var(--ink-2)}
+.fade{animation:fade .45s var(--ease) both}
+@keyframes fade{from{opacity:.35;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+
+<div class="bgfx" aria-hidden="true"></div>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>Flymate</div>
+  </header>
+
+  <form class="card search" id="ask" novalidate>
+    <div class="f wide"><span class="lab">Route</span>
+      <div class="pair"><select id="from" aria-label="From"></select><button type="button" class="swap" id="swap" aria-label="Swap airports">⇄</button><select id="to" aria-label="To"></select></div></div>
+    <div class="f"><span class="lab" id="dateLab">Date</span><input type="hidden" id="date" value="2026-10-24"></div>
+    <div class="f seg-f"><span class="lab" id="slotLab">Departs</span>
+      <div class="seg" id="seg" role="radiogroup" aria-labelledby="slotLab"><span class="seg-ind" aria-hidden="true"></span></div>
+      <select id="slot" hidden></select></div>
+    <div class="f"><span class="lab">Airline</span><select id="airline" aria-label="Airline"></select></div>
+    <div class="f"><label for="price">Price you see</label>
+      <div class="dd price-dd"><div class="price"><span>RM</span><input class="ctl" type="number" id="price" value="389" min="30" max="5000" role="combobox" aria-expanded="false" aria-controls="priceList" aria-autocomplete="none"><i class="chev" aria-hidden="true"></i></div>
+      <ul class="dd-list" id="priceList" role="listbox" aria-label="Prices, low to high"></ul></div></div>
+    <button class="btn" type="submit">Check</button>
+  </form>
+  <p class="err" id="err" hidden></p>
+
+  <div id="result" aria-live="polite"></div>
+  <p class="foot">Preview · all weather, delay history, fares and flight tracking are simulated.</p>
+</div>
+
+<script>
+(() => {
+const TODAY = new Date(2026, 9, 10);
+const AIRPORTS = {
+  KUL:{name:'Kuala Lumpur', lat:2.7456, lon:101.7099, cc:'MY', hub:1.0, storm:.75, rain:.18},
+  PEN:{name:'Penang', lat:5.2971, lon:100.2770, cc:'MY', hub:.5, storm:.7, rain:.16},
+  BKI:{name:'Kota Kinabalu', lat:5.9372, lon:116.0510, cc:'MY', hub:.45, storm:.8, rain:.2},
+  KCH:{name:'Kuching', lat:1.4847, lon:110.3470, cc:'MY', hub:.4, storm:.85, rain:.24},
+  LGK:{name:'Langkawi', lat:6.3297, lon:99.7287, cc:'MY', hub:.2, storm:.6, rain:.14},
+  SIN:{name:'Singapore', lat:1.3644, lon:103.9915, cc:'SG', hub:1.0, storm:.7, rain:.18},
+  BKK:{name:'Bangkok', lat:13.6900, lon:100.7501, cc:'TH', hub:.95, storm:.55, rain:.15},
+  CGK:{name:'Jakarta', lat:-6.1256, lon:106.6559, cc:'ID', hub:.9, storm:.8, rain:.2},
+};
+// f = fare multiplier vs a budget carrier, d = delay tendency (simulated)
+const AIRLINES = {
+  AK:{name:'AirAsia', f:1.0, d:.25},
+  FD:{name:'Thai AirAsia', f:1.0, d:.22},
+  OD:{name:'Batik Air', f:1.18, d:.18},
+  FY:{name:'Firefly', f:1.1, d:.05},
+  MH:{name:'Malaysia Airlines', f:1.45, d:-.12},
+  SQ:{name:'Singapore Airlines', f:1.8, d:-.25},
+  TR:{name:'Scoot', f:1.05, d:.15},
+  TG:{name:'Thai Airways', f:1.5, d:-.05},
+  GA:{name:'Garuda Indonesia', f:1.45, d:-.05},
+  JT:{name:'Lion Air', f:.95, d:.35},
+  VJ:{name:'VietJet Air', f:.95, d:.3},
+  VN:{name:'Vietnam Airlines', f:1.35, d:-.02},
+  '5J':{name:'Cebu Pacific', f:1.0, d:.3},
+  PR:{name:'Philippine Airlines', f:1.4, d:0},
+  CX:{name:'Cathay Pacific', f:1.9, d:-.2},
+};
+const SLOTS = {
+  morning:{label:'Morning', dep:7*60+30, f:.95, knock:.05, peak:.8},
+  afternoon:{label:'Afternoon', dep:13*60+15, f:1.0, knock:.45, peak:.7},
+  evening:{label:'Evening', dep:18*60+20, f:1.14, knock:.75, peak:1.0},
+};
+const DELAY_COST = 80;
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const $ = s => document.querySelector(s);
+const hhmm = m => { m = ((m % 1440) + 1440) % 1440; return String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0'); };
+const opts = (obj, label, val) => Object.entries(obj).map(([k,v]) => `<option value="${k}"${k===val?' selected':''}>${label(k,v)}</option>`).join('');
+$('#from').innerHTML = opts(AIRPORTS, k=>k, 'KUL');
+$('#to').innerHTML = opts(AIRPORTS, k=>k, 'BKI');
+$('#slot').innerHTML = opts(SLOTS, (k,v)=>v.label, 'evening');
+$('#airline').innerHTML = opts(AIRLINES, (k,v)=>v.name, 'AK');
+
+/* ---------- animated dropdown ---------- */
+function enhance(sel, view) {
+  const wrap = document.createElement('div'); wrap.className = 'dd';
+  const id = sel.id + '-list';
+  wrap.innerHTML = `<button type="button" class="ctl dd-btn" aria-haspopup="listbox" aria-expanded="false" aria-controls="${id}" aria-label="${sel.getAttribute('aria-label')}"><span class="v"></span><i class="chev" aria-hidden="true"></i></button><ul class="dd-list" role="listbox" id="${id}" tabindex="-1"></ul>`;
+  sel.after(wrap); sel.hidden = true;
+  const btn = wrap.querySelector('button'), list = wrap.querySelector('ul'), vals = [...sel.options].map(o => o.value);
+  list.innerHTML = vals.map(v => `<li role="option" data-v="${v}">${view(v, true)}</li>`).join('');
+  const items = [...list.children];
+  let act = 0;
+  const sync = () => { btn.querySelector('.v').innerHTML = view(sel.value, false); items.forEach(li => li.setAttribute('aria-selected', li.dataset.v === sel.value)); };
+  const setAct = i => { act = (i + items.length) % items.length; items.forEach((li, j) => li.classList.toggle('active', j === act)); items[act].scrollIntoView({block:'nearest'}); };
+  const open = () => { document.querySelectorAll('.dd.open').forEach(d => d !== wrap && d.close()); wrap.classList.add('open'); btn.setAttribute('aria-expanded', 'true'); setAct(vals.indexOf(sel.value)); };
+  const close = () => { wrap.classList.remove('open'); btn.setAttribute('aria-expanded', 'false'); };
+  const pick = v => { close(); if (sel.value !== v) { sel.value = v; sync(); sel.dispatchEvent(new Event('change')); } btn.focus(); };
+  wrap.close = close; sel.sync = sync;
+  btn.addEventListener('click', () => wrap.classList.contains('open') ? close() : open());
+  btn.addEventListener('keydown', e => {
+    const isOpen = wrap.classList.contains('open');
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); if (!isOpen) open(); else setAct(act + (e.key === 'ArrowDown' ? 1 : -1)); }
+    else if ((e.key === 'Enter' || e.key === ' ') && isOpen) { e.preventDefault(); pick(items[act].dataset.v); }
+    else if (e.key === 'Escape' || e.key === 'Tab') close();
+  });
+  items.forEach((li, j) => { li.addEventListener('mouseenter', () => setAct(j)); li.addEventListener('click', () => pick(li.dataset.v)); });
+  sync();
+}
+document.addEventListener('click', e => { if (!e.target.closest('.dd')) document.querySelectorAll('.dd.open').forEach(d => d.close()); });
+const apView = (k, long) => long ? `<span>${k}</span><small>${AIRPORTS[k].name}</small>` : `${k}<small>${AIRPORTS[k].name}</small>`;
+enhance($('#from'), apView);
+enhance($('#to'), apView);
+enhance($('#airline'), (k, long) => long ? `<span>${AIRLINES[k].name}</span><small>${k}</small>` : AIRLINES[k].name);
+
+/* ---------- segmented time of day ---------- */
+const seg = $('#seg'), slotKeys = Object.keys(SLOTS);
+seg.insertAdjacentHTML('beforeend', slotKeys.map(k => `<button type="button" role="radio" data-k="${k}">${SLOTS[k].label}</button>`).join(''));
+function syncSeg() {
+  const i = slotKeys.indexOf($('#slot').value);
+  seg.style.setProperty('--i', i);
+  seg.querySelectorAll('button').forEach((b, j) => { b.setAttribute('aria-checked', j === i); b.tabIndex = j === i ? 0 : -1; });
+}
+seg.querySelectorAll('button').forEach((b, j) => {
+  b.addEventListener('click', () => { $('#slot').value = b.dataset.k; syncSeg(); update(); });
+  b.addEventListener('keydown', e => {
+    if (!['ArrowLeft','ArrowRight'].includes(e.key)) return;
+    e.preventDefault(); const n = (j + (e.key === 'ArrowRight' ? 1 : -1) + 3) % 3;
+    $('#slot').value = slotKeys[n]; syncSeg(); seg.querySelectorAll('button')[n].focus(); update();
+  });
+});
+syncSeg();
+
+/* ---------- simulated data + model ---------- */
+const hash = str => { let h = 2166136261; for (const c of str) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
+const rng = seed => { let a = seed; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; };
+const sig = z => 1 / (1 + Math.exp(-z));
+const pct = p => Math.round(p * 100) + '%';
+const fmtDate = d => d.toLocaleDateString('en-GB', {day:'numeric', month:'short'});
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const spaced = n => Math.round(n).toLocaleString('en-US').replace(/,/g, ' ');
+const hav = (a, b) => { const R = 6371, r = Math.PI/180, dLat = (b.lat-a.lat)*r, dLon = (b.lon-a.lon)*r;
+  const h = Math.sin(dLat/2)**2 + Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLon/2)**2; return 2*R*Math.asin(Math.sqrt(h)); };
+const curve = d => { d = Math.max(0, d); if (d >= 18) return d > 50 ? 1 + (d-50)*.004 : 1; return 1 + .022 * Math.pow(18 - d, 1.2); };
+
+function weather(code, dateStr) {
+  const ap = AIRPORTS[code], r = rng(hash(code + dateStr)), df = .6 + .8*r();
+  return Array.from({length:24}, (_, h) => {
+    const g = Math.exp(-((h - 17) ** 2) / 18);
+    const p = Math.min(.97, Math.max(.03, ap.rain + ap.storm*g*df*.85 + (r()-.5)*.08));
+    const gust = Math.round(13 + 30*g*df + r()*6);
+    return {h, p, gust, storm: p > .55 && gust > 32};
+  });
+}
+const wxAt = (wx, min) => wx[Math.min(23, Math.max(0, Math.round(min/60)))];
+
+function delayModel(s, sl, dateStr, dur) {
+  const A = AIRPORTS[s.from], air = AIRLINES[s.airline];
+  const wxA = weather(s.from, dateStr), wxB = weather(s.to, dateStr);
+  const dw = wxAt(wxA, sl.dep), aw = wxAt(wxB, sl.dep + dur);
+  const terms = {
+    depWx: 1.6 * Math.max(0, dw.p - .25) * (dw.storm ? 1.25 : 1),
+    arrWx: 1.8 * Math.max(0, aw.p - .25) * (aw.storm ? 1.25 : 1),
+    peak: .7 * A.hub * sl.peak,
+    knock: sl.knock,
+    airline: Math.max(0, air.d),
+  };
+  const z = -3.1 + Object.values(terms).reduce((a,b)=>a+b, 0) + Math.min(0, air.d);
+  return {wxA, wxB, dw, aw, terms, z, p: sig(z)};
+}
+
+function evalFlight(s, slotKey) {
+  const A = AIRPORTS[s.from], B = AIRPORTS[s.to], air = AIRLINES[s.airline], sl = SLOTS[slotKey];
+  const km = hav(A, B), dur = Math.round((km/780*60 + 30)/5)*5;
+  const dm = delayModel(s, sl, s.date, dur);
+  const contrib = {}; for (const k in dm.terms) contrib[k] = Math.max(0, dm.p - sig(dm.z - dm.terms[k]));
+  const base = (69 + .135*km + (A.cc !== B.cc ? 45 : 0)) * air.f * sl.f;
+  const fare = d => Math.round(base * curve(d));
+  const h = hash(s.from + s.to + slotKey + s.airline);
+  const flightNo = s.airline + ' ' + (s.airline === 'AK' ? 5000 + h % 2000 : 100 + h % 900);
+  return {slotKey, sl, km, dur, dep: sl.dep, arr: sl.dep + dur, ...dm, contrib, fare, flightNo,
+    total: fare(s.days) + dm.p * DELAY_COST};
+}
+
+function history(s, f) {
+  let d = addDays(TODAY, -1); while (d.getDay() !== s.dt.getDay()) d = addDays(d, -1);
+  const out = [];
+  for (let k = 11; k >= 0; k--) {
+    const day = addDays(d, -7*k), dm = delayModel(s, f.sl, iso(day), f.dur), r = rng(hash(f.flightNo + iso(day)));
+    const late = r() < dm.p;
+    const mins = late ? Math.round(31 + Math.pow(r(), 1.8) * 95) : Math.round(r() * 22);
+    const top = Object.entries(dm.terms).sort((a,b) => b[1]-a[1])[0][0];
+    const cause = {depWx:'Weather', arrWx:'Weather', peak:'Busy airport', knock:'Late aircraft', airline:'Airline ops'}[top];
+    out.push({day, mins, late, cause});
+  }
+  return out;
+}
+
+function readState() {
+  const date = $('#date').value, [y, m, d] = date.split('-').map(Number), dt = new Date(y, m-1, d);
+  return {from:$('#from').value, to:$('#to').value, date, dt, days: Math.round((dt - TODAY)/86400000),
+    slot:$('#slot').value, airline:$('#airline').value, price: Math.max(1, +$('#price').value || 0)};
+}
+
+function build(s) {
+  const cur = evalFlight(s, s.slot);
+  const alts = slotKeys.map(k => evalFlight(s, k));
+  const best = alts.slice().sort((a,b) => a.total - b.total)[0], hist = history(s, cur), lateN = hist.filter(h => h.late).length;
+  const fair = cur.fare(s.days), ratio = s.price / fair;
+  const rise = s.days >= 8 ? cur.fare(s.days - 7) - fair : 0;
+  const savings = Math.round(cur.total - best.total);
+  const sw = best.slotKey !== s.slot && savings >= 25 ? best : null;
+
+  // sub line colour follows its category: high = red, fair = yellow, good = green
+  const priceCls = ratio > 1.08 ? 'bad' : ratio < .92 ? 'good' : 'warn';
+  let action, sub, subCls;
+  if (ratio > 1.12 && s.days > 7) { action = 'Wait'; sub = `Price is ${Math.round((ratio-1)*100)}% too high`; subCls = 'bad'; }
+  else if (s.days > 24) { action = 'Wait'; sub = `Price stays flat until ${fmtDate(addDays(s.dt, -20))}`; subCls = priceCls; }
+  else if (rise > 0) { action = 'Book now'; sub = `Price goes up RM ${rise} next week`; subCls = rise/fair > .1 ? 'bad' : 'warn'; }
+  else { action = 'Book now'; sub = 'Price won\'t drop'; subCls = priceCls; }
+  let big = action;
+  if (sw) { const w = sw.sl.label.toLowerCase(); big = action === 'Book now' ? `Book the ${w} flight` : `Wait, then book ${w}`;
+    sub = `Save RM ${savings} · delay risk ${pct(sw.p)} instead of ${pct(cur.p)}`; subCls = 'good'; }
+
+  const reasons = [];
+  const lvl = v => v >= .15 ? 'bad' : v >= .06 ? 'warn' : 'good';
+  if (cur.contrib.depWx > .03) reasons.push({t:`${cur.dw.storm ? 'Storm' : 'Rain'} at ${s.from}, ${hhmm(cur.dep)}`, n:cur.contrib.depWx});
+  if (cur.contrib.arrWx > .03) reasons.push({t:`${cur.aw.storm ? 'Storm' : 'Rain'} at ${s.to}, ${hhmm(cur.arr)}`, n:cur.contrib.arrWx});
+  if (cur.contrib.peak > .03) reasons.push({t:`Peak hour at ${s.from}`, n:cur.contrib.peak});
+  if (cur.contrib.knock > .03) reasons.push({t:'Late-day flight', n:cur.contrib.knock});
+  reasons.sort((a,b) => b.n - a.n); reasons.splice(3);
+  reasons.forEach(r => { r.v = `+${pct(r.n)}`; r.l = lvl(r.n); });
+  reasons.push({t:'Late in last 12 weeks', v:`${lateN} of 12`, l: lateN >= 5 ? 'bad' : lateN >= 3 ? 'warn' : 'good'});
+  if (rise > 0) reasons.push({t:'Price in 7 days', v:`+RM ${rise}`, l: rise/fair > .1 ? 'bad' : 'warn'});
+  if (ratio > 1.08) reasons.push({t:'Above fair price', v:`+RM ${s.price - fair}`, l:'bad'});
+
+  return {s, cur, alts, best, hist, lateN, fair, ratio, rise, big, sub, subCls, reasons};
+}
+
+/* ---------- animated calendar picker ---------- */
+function datePicker(input) {
+  const MIN = TODAY, MAX = addDays(TODAY, 60);
+  const wrap = document.createElement('div'); wrap.className = 'dd dp';
+  wrap.innerHTML = `<button type="button" class="ctl dd-btn" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="dateLab dateVal">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span class="v" id="dateVal"></span><i class="chev" aria-hidden="true"></i></button>
+    <div class="dd-list cal" role="dialog" aria-label="Choose a date">
+      <div class="cal-head"><button type="button" class="cal-nav" data-d="-1" aria-label="Previous month">‹</button><b aria-live="polite"></b><button type="button" class="cal-nav" data-d="1" aria-label="Next month">›</button></div>
+      <div class="cal-wd">${['Mo','Tu','We','Th','Fr','Sa','Su'].map(d => `<span>${d}</span>`).join('')}</div>
+      <div class="cal-grid"></div>
+    </div>`;
+  input.after(wrap);
+  const btn = wrap.querySelector('.dd-btn'), panel = wrap.querySelector('.cal'), head = wrap.querySelector('.cal-head b'), grid = wrap.querySelector('.cal-grid'), navs = wrap.querySelectorAll('.cal-nav');
+  const parse = v => { const [y, m, d] = v.split('-').map(Number); return new Date(y, m-1, d); };
+  const monthOf = d => new Date(d.getFullYear(), d.getMonth(), 1);
+  let view = monthOf(parse(input.value));
+  const sync = () => { btn.querySelector('.v').textContent = parse(input.value).toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'}); };
+  const draw = dir => {
+    head.textContent = view.toLocaleDateString('en-GB', {month:'long', year:'numeric'});
+    const y = view.getFullYear(), mo = view.getMonth(), first = (view.getDay() + 6) % 7, n = new Date(y, mo + 1, 0).getDate();
+    let h = '<span></span>'.repeat(first);
+    for (let d = 1; d <= n; d++) {
+      const dt = new Date(y, mo, d), v = iso(dt), off = dt < MIN || dt > MAX;
+      h += `<button type="button" data-v="${v}"${off ? ' disabled' : ''} aria-pressed="${v === input.value}" class="${v === iso(TODAY) ? 'is-today' : ''}" aria-label="${dt.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long'})}">${d}</button>`;
+    }
+    grid.innerHTML = h;
+    navs[0].disabled = view <= monthOf(MIN); navs[1].disabled = view >= monthOf(MAX);
+    if (dir) { grid.classList.remove('slide-l', 'slide-r'); void grid.offsetWidth; grid.classList.add(dir > 0 ? 'slide-l' : 'slide-r'); }
+  };
+  const focusDay = v => (grid.querySelector(`[data-v="${v}"]:not(:disabled)`) || grid.querySelector('button:not(:disabled)'))?.focus({preventScroll:true});
+  const open = () => {
+    document.querySelectorAll('.dd.open').forEach(d => d !== wrap && d.close());
+    view = monthOf(parse(input.value)); draw();
+    wrap.classList.add('open'); btn.setAttribute('aria-expanded', 'true');
+    setTimeout(() => focusDay(input.value), 80);
+  };
+  const close = () => { wrap.classList.remove('open'); btn.setAttribute('aria-expanded', 'false'); };
+  wrap.close = close;
+  btn.addEventListener('click', () => wrap.classList.contains('open') ? close() : open());
+  panel.addEventListener('click', e => e.stopPropagation());
+  navs.forEach(b => b.addEventListener('click', () => { const d = +b.dataset.d; view = new Date(view.getFullYear(), view.getMonth() + d, 1); draw(d); }));
+  grid.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b || b.disabled) return;
+    const changed = input.value !== b.dataset.v;
+    input.value = b.dataset.v; sync(); draw();
+    setTimeout(() => { close(); btn.focus(); }, 180);
+    if (changed) input.dispatchEvent(new Event('change'));
+  });
+  grid.addEventListener('keydown', e => {
+    const step = {ArrowLeft:-1, ArrowRight:1, ArrowUp:-7, ArrowDown:7}[e.key]; if (!step) return;
+    e.preventDefault();
+    const cur = document.activeElement?.dataset?.v; if (!cur) return;
+    const next = addDays(parse(cur), step); if (next < MIN || next > MAX) return;
+    const nm = monthOf(next); if (+nm !== +view) { const dir = nm > view ? 1 : -1; view = nm; draw(dir); }
+    focusDay(iso(next));
+  });
+  wrap.addEventListener('keydown', e => { if (e.key === 'Escape' && wrap.classList.contains('open')) { close(); btn.focus(); } });
+  sync();
+}
+datePicker($('#date'));
+
+/* ---------- price picker: typed value or a pick from prices sorted low to high ---------- */
+(function pricePicker() {
+  const input = $('#price'), wrap = input.closest('.price-dd'), list = $('#priceList');
+  let items = [], act = -1;
+  const build = () => {
+    const fair = model ? model.fair : 380;
+    const vals = [...new Set([.65, .75, .85, .92, 1, 1.08, 1.15, 1.3, 1.5].map(k => Math.max(30, Math.round(fair * k / 5) * 5)))].sort((a, b) => a - b);
+    list.innerHTML = '<li class="dd-head" aria-hidden="true">Low to high</li>' + vals.map(v => {
+      const r = v / fair, c = r > 1.08 ? 'bad' : r < .92 ? 'good' : 'warn', w = r > 1.08 ? 'Too high' : r < .92 ? 'Good deal' : 'Fair';
+      return `<li role="option" data-v="${v}" aria-selected="${String(v) === input.value}"><span>RM ${v}</span><span class="pill ${c}">${w}</span></li>`;
+    }).join('');
+    items = [...list.querySelectorAll('[role="option"]')];
+    items.forEach((li, j) => { li.addEventListener('mouseenter', () => setAct(j)); li.addEventListener('click', () => pick(li.dataset.v)); });
+  };
+  const setAct = i => { act = (i + items.length) % items.length; items.forEach((li, j) => li.classList.toggle('active', j === act)); items[act].scrollIntoView({block:'nearest'}); };
+  const open = () => {
+    if (wrap.classList.contains('open')) return;
+    document.querySelectorAll('.dd.open').forEach(d => d !== wrap && d.close());
+    build(); act = -1; wrap.classList.add('open'); input.setAttribute('aria-expanded', 'true');
+  };
+  const close = () => { wrap.classList.remove('open'); input.setAttribute('aria-expanded', 'false'); };
+  const pick = v => { input.value = v; close(); input.focus(); update(); };
+  wrap.close = close;
+  input.addEventListener('focus', open);
+  input.addEventListener('click', open);
+  input.addEventListener('input', close);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); open(); setAct(act < 0 ? 0 : act + (e.key === 'ArrowDown' ? 1 : -1)); }
+    else if (e.key === 'Enter' && wrap.classList.contains('open') && act >= 0) { e.preventDefault(); pick(items[act].dataset.v); }
+    else if (e.key === 'Escape' || e.key === 'Tab') close();
+  });
+})();
+
+/* ---------- number tween ---------- */
+const prevNums = {};
+function tween(el, key, to, fmt) {
+  const from = prevNums[key] ?? 0; prevNums[key] = to;
+  if (reduced || from === to) { el.innerHTML = fmt(to); return; }
+  const t0 = performance.now(), D = 650;
+  const step = t => { const k = Math.min(1, (t - t0) / D), e = 1 - Math.pow(1 - k, 3); el.innerHTML = fmt(from + (to - from) * e); if (k < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+
+let tab = 'price', model = null;
+
+function render(m) {
+  const {s, cur} = m;
+  const dCls = cur.p >= .45 ? 'bad' : cur.p >= .2 ? 'warn' : 'good', dWord = {bad:'High', warn:'Medium', good:'Low'}[dCls];
+  const pCls = m.ratio > 1.08 ? 'bad' : m.ratio < .92 ? 'good' : 'warn', pWord = m.ratio > 1.08 ? 'Too high' : m.ratio < .92 ? 'Good deal' : 'Fair';
+  const rCls = m.rise/m.fair > .1 ? 'bad' : m.rise > 0 ? 'warn' : 'good';
+  const status = cur.p >= .45 ? ['Likely late', 'var(--trk-bad)'] : cur.p >= .2 ? ['Some risk', 'var(--trk-warn)'] : ['On time', 'var(--trk-good)'];
+  $('#result').innerHTML = `
+  <div style="display:flex;flex-direction:column;gap:18px">
+    <section class="card verdict fade">
+      <div>
+        <p class="label">Flymate says</p>
+        <h1 class="big">${m.big}</h1>
+        <p class="sub tone-${m.subCls}">${m.sub}</p>
+        <div class="flight">${cur.flightNo} · ${s.from} ${hhmm(cur.dep)} → ${s.to} ${hhmm(cur.arr)} · ${fmtDate(s.dt)}</div>
+      </div>
+      <div class="stats">
+        <div class="stat"><p class="label">Delay risk</p><div class="num tone-${dCls}" id="nDelay"></div><span class="pill ${dCls}">${dWord}</span></div>
+        <div class="stat"><p class="label">Fair price</p><div class="num tone-${pCls}" id="nFair"></div><span class="pill ${pCls}">You: RM ${s.price} · ${pWord}</span></div>
+        <div class="stat"><p class="label">In 7 days</p><div class="num tone-${rCls}" id="nRise"></div><span class="pill ${rCls}">${m.rise > 0 ? '+' + Math.round(m.rise/m.fair*100) + '%' : 'No change'}</span></div>
+      </div>
+    </section>
+
+    <section class="trk fade" aria-label="Simulated flight preview">
+      <div class="trk-map" id="trkMap">
+        <canvas id="trkCanvas" aria-hidden="true"></canvas>
+        <div class="trk-chip"><span class="live"></span>LIVE <b>${cur.flightNo}</b></div>
+        <div class="trk-stats">
+          <div><span>ALT</span><b id="tAlt">0 m</b></div>
+          <div><span>SPEED</span><b id="tSpd">0 km/h</b></div>
+          <div><span>STATUS</span><b style="color:${status[1]}">${status[0]}</b></div>
+        </div>
+        <div class="trk-label" id="lFrom"><b>${AIRPORTS[s.from].name}</b><span>Departure ${hhmm(cur.dep)}</span></div>
+        <div class="trk-label" id="lTo"><b>${AIRPORTS[s.to].name}</b><span>Arrival ${hhmm(cur.arr)}</span></div>
+        <div class="trk-plane" id="plane"><svg viewBox="0 0 64 64" aria-hidden="true">
+          <defs><linearGradient id="planeBody" x1="0" x2="1"><stop offset="0" stop-color="#d9e1ee"/><stop offset=".5" stop-color="#ffffff"/><stop offset="1" stop-color="#c3cddd"/></linearGradient></defs>
+          <g fill="url(#planeBody)" stroke="rgba(20,30,60,.4)" stroke-width=".6" stroke-linejoin="round">
+            <path d="M35.5 24 L61 37 L61 40.5 L35.5 34 Z"/><path d="M28.5 24 L3 37 L3 40.5 L28.5 34 Z"/>
+            <path d="M35 51 L45 57 L45 59.5 L34.5 56 Z"/><path d="M29 51 L19 57 L19 59.5 L29.5 56 Z"/>
+            <rect x="41.5" y="27.5" width="4.5" height="9" rx="2.2"/><rect x="18" y="27.5" width="4.5" height="9" rx="2.2"/>
+            <path d="M32 2 C34.6 2 35.6 5.5 35.6 9.5 L35.6 50 C35.6 54.5 34 59.5 32 62 C30 59.5 28.4 54.5 28.4 50 L28.4 9.5 C28.4 5.5 29.4 2 32 2 Z"/>
+          </g>
+          <rect x="31.25" y="13" width="1.5" height="34" rx=".75" fill="#8b5cf6" opacity=".75"/>
+          <path d="M30.4 7.2 Q32 5.8 33.6 7.2 L33.3 8.8 Q32 8 30.7 8.8 Z" fill="#1b2540"/>
+        </svg></div>
+      </div>
+      <div class="trk-bottom">
+        <div class="ring">
+          <svg viewBox="0 0 84 84" aria-hidden="true"><defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#38bdf8"/><stop offset=".55" stop-color="#8b5cf6"/><stop offset="1" stop-color="#ec4899"/></linearGradient></defs>
+            <circle class="track" cx="42" cy="42" r="36"/><circle class="prog" id="ringProg" cx="42" cy="42" r="36" stroke-dasharray="226.2" stroke-dashoffset="226.2"/></svg>
+          <div class="txt"><b id="tPct">0%</b><span>FLOWN</span></div>
+        </div>
+        <div class="trk-prog">
+          <div class="trk-row"><div class="km"><span id="tKm">0</span><span> / ${spaced(cur.km)} km</span></div><div class="eta" id="tEta"></div></div>
+          <div class="scrub" id="scrub" role="progressbar" aria-label="Flight progress" aria-valuemin="0" aria-valuemax="100"><i></i></div>
+          <div class="trk-row small"><span>${s.from} · ${hhmm(cur.dep)}</span><span>${s.to} · ${hhmm(cur.arr)}${cur.arr >= 1440 ? ' +1' : ''}</span></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="two fade">
+      <section class="card panel"><h2>Why</h2>
+        <ul class="rows">${m.reasons.map(r => `<li><span class="why"><i class="${r.l}"></i>${r.t}</span><span class="val">${r.v}</span></li>`).join('')}</ul>
+      </section>
+      <section class="card panel"><h2>Flights that day</h2>
+        <div class="opthead"><span>When</span><span>Price</span><span>Delay</span></div>
+        ${m.alts.map(a => `<button type="button" class="opt" data-slot="${a.slotKey}">
+          <span class="when">${a.sl.label} <small>${hhmm(a.dep)}</small>${a === m.best ? '<span class="tag">Best</span>' : ''}${a.slotKey === s.slot ? '<span class="tag you">Yours</span>' : ''}</span>
+          <span class="val">RM ${a.fare(s.days)}</span>
+          <span class="val r">${pct(a.p)}</span></button>`).join('')}
+      </section>
+    </div>
+
+    <section class="card panel fade">
+      <div class="chead">
+        <div class="tabs" role="tablist"><span class="tab-ind" aria-hidden="true"></span>
+          <button role="tab" data-tab="price">Price</button>
+          <button role="tab" data-tab="delays">Delay history</button>
+          <button role="tab" data-tab="weather">Weather</button>
+        </div>
+        <span class="cnote" id="cnote"></span>
+      </div>
+      <div class="chart" id="chart" role="tabpanel"></div>
+      <div class="legend" id="legend"></div>
+    </section>
+  </div>`;
+
+  tween($('#nDelay'), 'delay', cur.p * 100, v => Math.round(v) + '%');
+  tween($('#nFair'), 'fair', m.fair, v => '<small>RM</small>' + Math.round(v));
+  if (m.rise > 0) tween($('#nRise'), 'rise', m.rise, v => '<small>+RM</small>' + Math.round(v)); else { $('#nRise').textContent = 'Flat'; prevNums.rise = 0; }
+
+  document.querySelectorAll('.opt').forEach(b => b.addEventListener('click', () => { $('#slot').value = b.dataset.slot; syncSeg(); update(); }));
+  document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => { tab = b.dataset.tab; syncTabs(); drawChart(); }));
+  syncTabs(); drawChart(); initTracker(m);
+}
+
+function syncTabs() {
+  const btns = [...document.querySelectorAll('[data-tab]')], ind = document.querySelector('.tab-ind');
+  btns.forEach(b => b.setAttribute('aria-selected', b.dataset.tab === tab));
+  const b = btns.find(x => x.dataset.tab === tab);
+  if (b && ind) { ind.style.width = b.offsetWidth + 'px'; ind.style.transform = `translateX(${b.offsetLeft}px)`; }
+}
+
+/* ---------- tracker: dot-matrix map, arc, plane ---------- */
+const LAND = [
+  [[92,23],[92.3,21],[93.6,19.5],[94.4,18],[94.2,16],[95.3,15.8],[97.6,16.5],[97.8,14.5],[98.5,12.5],[98.6,10.5],[98.3,8.5],[98.3,7.8],[99.2,6.8],[100.1,6.4],[100.4,5],[100.8,3.8],[101.3,2.8],[102.4,2],[103.4,1.3],[104.2,1.4],[103.8,2.6],[103.4,3.8],[103.4,4.8],[102.6,5.8],[102.1,6.2],[101.3,6.9],[100.4,7.3],[100.2,8.4],[99.9,9.2],[99.2,9.4],[99.2,10.3],[99.6,11.3],[99.9,12.6],[100.1,13.4],[100.7,13.5],[101,12.7],[102.1,12.2],[102.6,12],[103.1,11],[104.4,10.4],[104.8,8.6],[105.2,8.7],[106.6,9.6],[107.2,10.4],[108.9,11.3],[109.2,12.6],[109.3,13.8],[108.8,15.3],[108.3,16],[107.1,17],[106.5,18],[105.7,19],[106.2,20.2],[107.5,21.5],[108.5,21.7],[110,21.2],[111,21.5],[112,22],[113,22.5],[113,23]],
+  [[95.2,5.6],[96.4,5.2],[97.6,5.1],[98.3,4.2],[99.8,2.9],[100.9,2],[102.2,1.4],[103.1,.4],[103.8,-1],[104.6,-1.8],[105.9,-3],[105.9,-5.8],[104.6,-5.9],[103.5,-4.9],[102.3,-3.9],[101.2,-2.7],[100.3,-1],[99.2,.3],[98.6,1.7],[97.6,2.8],[96.5,3.8],[95.5,4.6]],
+  [[108.9,.5],[109.1,1.6],[109.7,2],[111.3,2.4],[112.9,3.1],[113.9,4.5],[115,5],[115.4,5.4],[116,6],[116.8,7],[117.3,6.6],[117.7,5.9],[119.2,5.3],[118.3,4.4],[117.7,3.8],[117.9,2],[118.9,1],[117.9,.8],[117.5,-.5],[116.6,-1.4],[116.5,-2.5],[116,-3.6],[114.6,-4],[113,-3.2],[111.7,-3.4],[110.2,-2.9],[110,-1.4],[109,-.3]],
+  [[105.2,-6.8],[106,-5.9],[108.3,-6.3],[110.4,-6.9],[112.6,-6.9],[114.4,-7.7],[114.6,-8.7],[112,-8.3],[109,-7.8],[106.4,-7.4]],
+  [[114.9,-8.1],[115.7,-8.4],[115.2,-8.8],[114.6,-8.5]],
+  [[118.8,-2.8],[119.4,-.8],[120.1,.7],[121.5,1.1],[123,.9],[124.5,.9],[124.9,1.5],[125.2,1.3],[124.4,.3],[123,.4],[121.3,.4],[121,-.8],[122.6,-.9],[123.4,-1],[122,-1.9],[121.5,-2],[122.4,-3.5],[122.8,-4.6],[121.5,-4.7],[121,-2.8],[120.5,-2.8],[120.4,-5.5],[119.5,-5.6],[119.4,-3.5]],
+  [[117.2,8.3],[117.6,8.5],[119,10],[119.7,11],[119.5,11.4],[118.7,10.3],[117.9,9.3],[117.1,8.6]],
+  [[121.9,6.9],[122.2,7.6],[123,7.6],[123.5,8.4],[124.2,8.3],[124.8,9],[125.5,9.8],[126.2,9.2],[126.6,7.3],[126.2,6.4],[125.6,6],[125.2,5.6],[124,6.4],[123.6,7.2],[122.8,7.3],[122.1,6.8]],
+  [[120.6,18.5],[121.9,18.3],[122.3,17],[121.6,15.8],[121.6,14.2],[122.6,14.1],[124,13],[123.9,12.6],[122.8,13.2],[121.8,13.6],[120.6,13.9],[120.9,14.8],[120,15.5],[119.8,16.4],[120.4,16.8]],
+  [[108.7,19.2],[110.5,20.1],[111,19.6],[110.5,18.5],[109.5,18.2],[108.6,18.6]],
+];
+function inPoly(x, y, poly) { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; }
+
+let trk = null;
+function initTracker(m) {
+  const map = $('#trkMap'), cv = $('#trkCanvas'), A = AIRPORTS[m.s.from], B = AIRPORTS[m.s.to];
+  const W = map.clientWidth, H = map.clientHeight, dpr = Math.min(2, devicePixelRatio || 1);
+  cv.width = W * dpr; cv.height = H * dpr;
+  const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // fit both airports, leaving room for labels and the panels on top
+  const lonMin = Math.min(A.lon, B.lon), lonMax = Math.max(A.lon, B.lon), latMin = Math.min(A.lat, B.lat), latMax = Math.max(A.lat, B.lat);
+  const spanLon = Math.max(14, lonMax - lonMin + 10), spanLat = Math.max(8, latMax - latMin + 7);
+  const sc = Math.min(W / spanLon, (H - 70) / spanLat);
+  const cx = (lonMin + lonMax) / 2, cy = (latMin + latMax) / 2;
+  const proj = (lon, lat) => [W/2 + (lon - cx) * sc, 34 + (H - 34)/2 - (lat - cy) * sc];
+  const unproj = (x, y) => [cx + (x - W/2) / sc, cy - (y - 34 - (H - 34)/2) / sc];
+  // dot layer
+  const off = document.createElement('canvas'); off.width = cv.width; off.height = cv.height;
+  const o = off.getContext('2d'); o.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const dot = getComputedStyle(document.documentElement).getPropertyValue('--trk-dot').trim() || '#7cc4ff';
+  o.fillStyle = dot;
+  const step = W < 600 ? 7 : 8;
+  for (let y = step/2; y < H; y += step) for (let x = step/2; x < W; x += step) {
+    const [lon, lat] = unproj(x, y);
+    if (LAND.some(p => inPoly(lon, lat, p))) { const r = rng(hash(x + ':' + y))(); o.globalAlpha = .18 + r * .55; o.beginPath(); o.arc(x, y, 1.25, 0, 7); o.fill(); }
+  }
+  const P0 = proj(A.lon, A.lat), P2 = proj(B.lon, B.lat);
+  const dx = P2[0] - P0[0], dy = P2[1] - P0[1], len = Math.hypot(dx, dy) || 1;
+  let nx = -dy / len, ny = dx / len; if (ny > 0) { nx = -nx; ny = -ny; }
+  const lift = Math.min(len * .28, 90), P1 = [(P0[0] + P2[0]) / 2 + nx * lift, (P0[1] + P2[1]) / 2 + ny * lift];
+  const bz = t => [(1-t)**2*P0[0] + 2*(1-t)*t*P1[0] + t*t*P2[0], (1-t)**2*P0[1] + 2*(1-t)*t*P1[1] + t*t*P2[1]];
+  const tan = t => [2*(1-t)*(P1[0]-P0[0]) + 2*t*(P2[0]-P1[0]), 2*(1-t)*(P1[1]-P0[1]) + 2*t*(P2[1]-P1[1])];
+  // labels
+  const place = (el, P, side) => {
+    const w = el.offsetWidth, h = el.offsetHeight;
+    let x = side < 0 ? P[0] - w - 14 : P[0] + 14, y = P[1] - h - 14;
+    if (x < 10) x = P[0] + 14; if (x + w > W - 10) x = P[0] - w - 14;
+    x = Math.max(10, Math.min(W - w - 10, x));
+    if (y < (W < 600 ? 104 : 62)) y = P[1] + 14;
+    y = Math.max(10, Math.min(H - h - 10, y));
+    el.style.left = x + 'px'; el.style.top = y + 'px';
+  };
+  place($('#lFrom'), P0, P0[0] <= P2[0] ? -1 : 1);
+  place($('#lTo'), P2, P2[0] > P0[0] ? 1 : -1);
+  if (trk) cancelAnimationFrame(trk.raf);
+  trk = {ctx, off, W, H, P0, P2, bz, tan, m, dpr};
+  if (reduced) { drawTrk(.37); return; }
+  // shuttle back and forth forever: fly out, turn around, fly back, turn around
+  const FLY = 11000, TURN = 900, CYCLE = 2 * (FLY + TURN), t0 = performance.now() - .37 * FLY;
+  const ease = k => .5 - .5 * Math.cos(Math.PI * k);
+  const anim = t => {
+    const c = (t - t0) % CYCLE;
+    if (c < FLY) drawTrk(ease(c / FLY), t, 1, 0);
+    else if (c < FLY + TURN) drawTrk(1, t, 1, 180 * ease((c - FLY) / TURN));
+    else if (c < 2 * FLY + TURN) drawTrk(1 - ease((c - FLY - TURN) / FLY), t, -1, 0);
+    else drawTrk(0, t, -1, 180 * ease((c - 2 * FLY - TURN) / TURN));
+    trk.raf = requestAnimationFrame(anim);
+  };
+  trk.raf = requestAnimationFrame(anim);
+}
+
+function drawTrk(p, now = 0, dir = 1, turn = 0) {
+  const {ctx, off, W, H, P0, P2, bz, tan, m} = trk, cur = m.cur, q = dir > 0 ? p : 1 - p;
+  ctx.clearRect(0, 0, W, H);
+  ctx.drawImage(off, 0, 0, W, H);
+  const N = 90, pts = Array.from({length: N + 1}, (_, i) => bz(i / N)), cut = Math.round(p * N);
+  ctx.setLineDash([4, 6]); ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255,255,255,.4)';
+  const ahead = dir > 0 ? pts.slice(cut) : pts.slice(0, cut + 1), behind = dir > 0 ? pts.slice(0, cut + 1) : pts.slice(cut);
+  ctx.beginPath(); ahead.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke();
+  ctx.setLineDash([]);
+  if (behind.length > 1) {
+    const g = ctx.createLinearGradient(P0[0], P0[1], P2[0], P2[1]); g.addColorStop(0, '#38bdf8'); g.addColorStop(.55, '#8b5cf6'); g.addColorStop(1, '#ec4899');
+    ctx.strokeStyle = g; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+    ctx.beginPath(); behind.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke();
+  }
+  // contrail fading out behind the plane
+  const i0 = dir > 0 ? Math.max(0, cut - 7) : Math.min(N, cut + 7), trail = dir > 0 ? pts.slice(i0, cut + 1) : pts.slice(cut, i0 + 1).reverse();
+  if (trail.length >= 3) {
+    const [ax, ay] = trail[0], [bx, by] = trail[trail.length - 1], cg = ctx.createLinearGradient(ax, ay, bx, by);
+    cg.addColorStop(0, 'rgba(255,255,255,0)'); cg.addColorStop(1, 'rgba(255,255,255,.75)');
+    ctx.save(); ctx.strokeStyle = cg; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.shadowColor = 'rgba(200,230,255,.8)'; ctx.shadowBlur = 10;
+    ctx.beginPath(); trail.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke(); ctx.restore();
+  }
+  [P0, P2].forEach(([x, y]) => { ctx.fillStyle = 'rgba(255,255,255,.15)'; ctx.beginPath(); ctx.arc(x, y, 9, 0, 7); ctx.fill(); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x, y, 3.5, 0, 7); ctx.fill(); });
+  const [x, y] = bz(p), [tx, ty] = tan(Math.min(.999, Math.max(.001, p)));
+  const plane = $('#plane'); plane.style.left = x + 'px'; plane.style.top = y + 'px';
+  const airborne = q > 0 && q < 1, bank = airborne ? Math.sin(now / 1300) * 3 : 0;
+  plane.querySelector('svg').style.transform = `rotate(${Math.atan2(ty, tx) * 180 / Math.PI + 90 + (dir < 0 ? 180 : 0) + turn + bank}deg)`;
+  // flight numbers, with small live wobble at cruise
+  const ramp = q < .12 ? q / .12 : q > .85 ? (1 - q) / .15 : 1, cruise = airborne && ramp === 1;
+  const maxAlt = cur.km < 500 ? 7600 : cur.km < 1000 ? 9800 : 11280, maxSpd = cur.km < 500 ? 690 : 840;
+  $('#tAlt').textContent = spaced(Math.round((maxAlt * ramp + (cruise ? Math.sin(now / 900) * 15 : 0)) / 5) * 5) + ' m';
+  $('#tSpd').textContent = spaced(!airborne ? 0 : 250 + (maxSpd - 250) * ramp + (cruise ? Math.sin(now / 1100) * 4 : 0)) + ' km/h';
+  const dest = dir > 0 ? m.s.to : m.s.from;
+  $('#tPct').textContent = Math.round(q * 100) + '%';
+  $('#ringProg').setAttribute('stroke-dashoffset', (226.2 * (1 - q)).toFixed(1));
+  $('#tKm').textContent = spaced(cur.km * q);
+  const left = Math.round(cur.dur * (1 - q)), hh = Math.floor(left / 60), mm = left % 60;
+  $('#tEta').textContent = left <= 0 ? `Landed in ${dest}` : `${hh ? hh + ' h ' : ''}${mm} min to ${dest}`;
+  const sc = $('#scrub'); sc.style.setProperty('--p', (p * 100) + '%'); sc.setAttribute('aria-valuenow', Math.round(q * 100));
+}
+
+/* ---------- charts ---------- */
+const niceStep = raw => { const p = 10 ** Math.floor(Math.log10(raw)), n = raw / p; return (n < 1.5 ? 1 : n < 3 ? 2 : n < 7 ? 5 : 10) * p; };
+function tipEl(host) { const t = document.createElement('div'); t.className = 'tip'; t.hidden = true; host.appendChild(t); return t; }
+function place(tip, el, W, H, x, y) { const r = el.getBoundingClientRect(); tip.style.left = (x / W * r.width) + 'px'; tip.style.top = (y / H * r.height) + 'px'; tip.hidden = false; }
+
+function drawChart() {
+  if (!model) return;
+  const el = $('#chart'), note = $('#cnote'), leg = $('#legend');
+  const W = Math.max(280, el.clientWidth);
+  if (tab === 'price') drawPrice(el, W, note, leg); else if (tab === 'delays') drawDelays(el, W, note, leg); else drawWx(el, W, note, leg);
+  el.classList.remove('fade'); void el.offsetWidth; el.classList.add('fade');
+}
+
+function drawPrice(el, W, note, leg) {
+  const {s, cur} = model, today = Math.min(60, s.days), H = 240, L = 46, R = 16, T = 24, B = 28;
+  const pts = []; for (let d = 60; d >= 0; d--) pts.push({d, v: cur.fare(d)});
+  const vals = pts.map(p => p.v), lo = Math.min(...vals) * .88, hi = Math.max(Math.max(...vals) * 1.06, s.price * 1.08);
+  const step = niceStep((hi - lo) / 4), y0 = Math.floor(lo/step)*step, y1 = Math.ceil(hi/step)*step;
+  const x = d => L + (60 - d) / 60 * (W - L - R), y = v => T + (1 - (v - y0)/(y1 - y0)) * (H - T - B);
+  const line = arr => arr.map((p,i) => `${i?'L':'M'}${x(p.d).toFixed(1)},${y(p.v).toFixed(1)}`).join('');
+  let g = '';
+  for (let v = y0; v <= y1 + 1e-6; v += step) g += `<line class="c-grid" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text class="c-axis" x="${L-8}" y="${y(v)+4}" text-anchor="end">${v}</text>`;
+  [60,45,30,15,7,0].forEach(d => g += `<text class="c-axis" x="${x(d)}" y="${H-8}" text-anchor="middle">${d === 0 ? 'Fly' : d + 'd'}</text>`);
+  const tx = x(today), sy = y(s.price), rightSide = tx > W*.6;
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Fare by days before departure">
+    ${g}
+    <path class="c-past" d="${line(pts.filter(p => p.d >= today))}"/>
+    <path class="c-line" d="${line(pts.filter(p => p.d <= today))}"/>
+    <line class="c-today" x1="${tx}" x2="${tx}" y1="${T-4}" y2="${H-B}"/>
+    <text class="c-lab2" x="${tx}" y="${T-10}" text-anchor="${rightSide ? 'end' : 'middle'}">Today</text>
+    <circle class="c-you" cx="${tx}" cy="${sy}" r="6"/>
+    <text class="c-lab" x="${tx + (rightSide ? -12 : 12)}" y="${sy - 10}" text-anchor="${rightSide ? 'end' : 'start'}">You: RM ${s.price}</text>
+    <line class="c-hair" id="hair" y1="${T}" y2="${H-B}" visibility="hidden"/><circle class="c-dot" id="dot" r="5" visibility="hidden"/>
+    <rect class="c-hit" x="${L}" y="${T}" width="${W-L-R}" height="${H-T-B}"/>
+  </svg>`;
+  note.textContent = model.rise > 0 ? 'Rises from 18 days out' : 'Flat for now';
+  leg.innerHTML = `<span><i class="sw" style="background:var(--accent)"></i>Fair price ahead</span><span><i class="sw" style="background:var(--ink-3)"></i>Already passed</span>`;
+  const tip = tipEl(el), hair = el.querySelector('#hair'), dot = el.querySelector('#dot');
+  el.querySelector('.c-hit').addEventListener('pointermove', e => {
+    const r = el.getBoundingClientRect(), px = (e.clientX - r.left) * W / r.width;
+    const d = Math.max(0, Math.min(60, Math.round(60 - (px - L) / (W - L - R) * 60))), v = cur.fare(d);
+    hair.setAttribute('x1', x(d)); hair.setAttribute('x2', x(d)); hair.setAttribute('visibility', 'visible');
+    dot.setAttribute('cx', x(d)); dot.setAttribute('cy', y(v)); dot.setAttribute('visibility', 'visible');
+    tip.innerHTML = `RM ${v} <span>· ${d === 0 ? 'flight day' : d + ' days before'}</span>`;
+    place(tip, el, W, H, x(d), y(v));
+  });
+  el.querySelector('.c-hit').addEventListener('pointerleave', () => { tip.hidden = true; hair.setAttribute('visibility','hidden'); dot.setAttribute('visibility','hidden'); });
+}
+
+function drawDelays(el, W, note, leg) {
+  const hist = model.hist, H = 240, L = 40, R = 10, T = 16, B = 28;
+  const max = Math.max(60, Math.ceil(Math.max(...hist.map(h => h.mins)) / 30) * 30);
+  const bw = (W - L - R) / hist.length, y = v => T + (1 - v / max) * (H - T - B), base = y(0);
+  let g = '';
+  for (let v = 0; v <= max; v += 30) g += `<line class="c-grid" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text class="c-axis" x="${L-8}" y="${y(v)+4}" text-anchor="end">${v}m</text>`;
+  hist.forEach((h, i) => {
+    const bx = L + i*bw + bw*.2, w = bw*.6, top = y(Math.max(2, h.mins)), rr = Math.min(4, w/2);
+    g += `<path class="${h.late ? 'c-late' : 'c-bar'}" d="M${bx},${base} V${top+rr} Q${bx},${top} ${bx+rr},${top} H${bx+w-rr} Q${bx+w},${top} ${bx+w},${top+rr} V${base}Z"/>`;
+    if (i % 2 === 1 || W > 560) g += `<text class="c-axis" x="${bx + w/2}" y="${H-8}" text-anchor="middle">${fmtDate(h.day)}</text>`;
+    g += `<rect class="c-hit" data-i="${i}" x="${L + i*bw}" y="${T}" width="${bw}" height="${H-T-B}"/>`;
+  });
+  g += `<line class="c-thr" x1="${L}" x2="${W-R}" y1="${y(30)}" y2="${y(30)}"/><text class="c-thr-lab" x="${W-R}" y="${y(30)-6}" text-anchor="end">Late (30m+)</text>`;
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Delay minutes for this flight over the last 12 weeks">${g}</svg>`;
+  note.textContent = `Late ${model.lateN} of 12 weeks`;
+  leg.innerHTML = `<span><i class="sw" style="background:var(--bad)"></i>Late</span><span><i class="sw" style="background:var(--bar)"></i>On time</span>`;
+  const tip = tipEl(el);
+  el.querySelectorAll('.c-hit').forEach(r => {
+    r.addEventListener('pointerenter', () => { const i = +r.dataset.i, h = hist[i];
+      tip.innerHTML = `${fmtDate(h.day)} · +${h.mins} min${h.late ? ` <span>· ${h.cause}</span>` : ''}`;
+      place(tip, el, W, H, L + i*bw + bw/2, y(Math.max(2, h.mins))); });
+    r.addEventListener('pointerleave', () => tip.hidden = true);
+  });
+}
+
+function drawWx(el, W, note, leg) {
+  const {s, cur} = model, L = 4, R = 4, rowH = 64, head = 22, gap = 16, axis = 20;
+  const H = 2*(head + rowH) + gap + axis, bw = (W - L - R) / 24;
+  const rows = [{code:s.from, wx:cur.wxA, mark:cur.dep, lab:'Takeoff', y:0}, {code:s.to, wx:cur.wxB, mark:cur.arr, lab:'Landing', y:head + rowH + gap}];
+  let g = '';
+  rows.forEach((row, ri) => {
+    const base = row.y + head + rowH, w0 = wxAt(row.wx, row.mark);
+    g += `<text class="c-lab" x="${L}" y="${row.y + 14}">${row.code} · ${row.lab} ${hhmm(row.mark)} · ${pct(w0.p)} rain</text>`;
+    row.wx.forEach(w => {
+      const h = Math.max(2, w.p*(rowH - 4)), bx = L + w.h*bw + 1, wd = Math.max(2, bw - 2), rr = Math.min(3, wd/2);
+      g += `<path class="${w.storm ? 'c-storm' : 'c-rain'}" d="M${bx},${base} V${base-h+rr} Q${bx},${base-h} ${bx+rr},${base-h} H${bx+wd-rr} Q${bx+wd},${base-h} ${bx+wd},${base-h+rr} V${base}Z"/>`;
+      g += `<rect class="c-hit" data-r="${ri}" data-h="${w.h}" x="${L + w.h*bw}" y="${row.y + head}" width="${bw}" height="${rowH}"/>`;
+    });
+    const mx = L + Math.min(23.9, Math.min(row.mark, 1439)/60) * bw;
+    g += `<line class="c-mark" x1="${mx}" x2="${mx}" y1="${row.y + head}" y2="${base}"/>`;
+  });
+  [0,6,12,18,23].forEach(h => g += `<text class="c-axis" x="${L + h*bw + bw/2}" y="${H-4}" text-anchor="middle">${String(h).padStart(2,'0')}:00</text>`);
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Hourly chance of rain at both airports">${g}</svg>`;
+  note.textContent = fmtDate(s.dt);
+  leg.innerHTML = `<span><i class="sw" style="background:var(--bar)"></i>Rain chance</span><span><i class="sw" style="background:var(--accent)"></i>Storm</span><span><i class="sw" style="background:var(--ink)"></i>Your flight</span>`;
+  const tip = tipEl(el);
+  el.querySelectorAll('.c-hit').forEach(r => {
+    r.addEventListener('pointerenter', () => { const row = rows[+r.dataset.r], w = row.wx[+r.dataset.h];
+      tip.innerHTML = `${String(w.h).padStart(2,'0')}:00 · ${pct(w.p)} rain <span>· ${w.gust} km/h${w.storm ? ' · storm' : ''}</span>`;
+      place(tip, el, W, H, L + w.h*bw + bw/2, row.y + head + rowH - w.p*(rowH - 4)); });
+    r.addEventListener('pointerleave', () => tip.hidden = true);
+  });
+}
+
+/* ---------- wiring ---------- */
+function update() {
+  const s = readState(), err = $('#err');
+  const msg = s.from === s.to ? 'Pick two different airports.' : !s.date || isNaN(s.days) ? 'Pick a date.' : s.days < 0 ? 'Pick a date from today.' : s.days > 60 ? 'Pick a date within 60 days.' : '';
+  err.hidden = !msg; err.textContent = msg;
+  if (msg) return;
+  if (trk) cancelAnimationFrame(trk.raf);
+  model = build(s); render(model);
+}
+$('#ask').addEventListener('submit', e => { e.preventDefault(); update(); });
+['#from','#to','#date','#airline'].forEach(id => $(id).addEventListener('change', update));
+let pt; $('#price').addEventListener('input', () => { clearTimeout(pt); pt = setTimeout(update, 350); });
+$('#swap').addEventListener('click', e => {
+  const a = $('#from').value; $('#from').value = $('#to').value; $('#to').value = a;
+  $('#from').sync(); $('#to').sync(); e.currentTarget.classList.toggle('spin'); update();
+});
+let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => {
+  if (!model) return; drawChart(); syncTabs();
+  initTracker(model);
+}, 150); });
+update();
+})();
+</script>
+
+</body></html>
