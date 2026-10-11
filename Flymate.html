@@ -530,6 +530,32 @@ body{background-color:var(--page-a);background-image:linear-gradient(160deg,var(
 .trk-play:hover{background:rgba(255,255,255,.2)}
 .trk-play svg{width:14px;height:14px;fill:#fff}
 
+/* ---------- cleaner layout: verdict + one tabbed detail card ---------- */
+.big{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:var(--ink)}
+.cta-row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s3) var(--s4);margin-top:var(--s5)}
+.btn.cta{min-height:50px;font-size:16px;padding:0 var(--s6)}
+.trust{font-size:var(--t-small);color:var(--ink-3)}
+.cta-note{margin:var(--s3) 0 0;font-size:var(--t-small);font-weight:500;color:var(--ink-2)}
+.opt-lab{font-weight:500;color:var(--ink-3);margin-left:4px}
+.tag{background:var(--good-bg);color:var(--good)}
+.tag.you{background:none;color:var(--ink-3)}
+.stack > .detail{position:relative;isolation:isolate;background:var(--glass-bg);-webkit-backdrop-filter:blur(24px) saturate(165%);backdrop-filter:blur(24px) saturate(165%);
+  border-radius:26px;padding:var(--s5) var(--s6) var(--s6);box-shadow:inset 0 1px 0 var(--rim-a),0 30px 60px -36px var(--deep),0 10px 26px -18px var(--deep)}
+@media (max-width:600px){.stack > .detail{padding:var(--s4);border-radius:22px}}
+.mtabs{position:relative;display:flex;gap:2px;padding:4px;border-radius:14px;background:var(--glass-bg-2);width:max-content;max-width:100%;overflow-x:auto;scrollbar-width:none;margin-bottom:var(--s6)}
+.mtabs::-webkit-scrollbar{display:none}
+.mtabs button{position:relative;z-index:1;border:0;background:transparent;color:var(--ink-2);font-size:15px;font-weight:600;padding:9px 18px;border-radius:10px;cursor:pointer;white-space:nowrap;transition:color .25s var(--ease)}
+.mtabs button[aria-selected="true"]{color:var(--on-accent)}
+.mtab-ind{position:absolute;top:4px;bottom:4px;left:0;border-radius:10px;background:var(--accent);transition:transform .35s var(--ease),width .35s var(--ease)}
+.mpanel{display:flex;flex-direction:column;gap:var(--s6);animation:fade .3s var(--ease)}
+.mpanel[hidden]{display:none}
+.detail .two{gap:var(--s7)}
+.detail .panel{background:none;border-radius:0;padding:0;box-shadow:none}
+.detail .chead{margin-bottom:var(--s4)}
+#subSeg:empty{display:none}
+#subSeg.seg{min-width:220px;min-height:36px}
+#subSeg.seg button{font-size:13px}
+
 </style>
 
 <div class="bgfx" aria-hidden="true"><i class="orb o1"></i><i class="orb o2"></i><i class="orb o3"></i></div>
@@ -539,7 +565,6 @@ body{background-color:var(--page-a);background-image:linear-gradient(160deg,var(
         <defs><linearGradient id="logoGrad" x1="0" y1="1" x2="1" y2="0"><stop offset="0" style="stop-color:var(--accent)"/><stop offset="1" style="stop-color:var(--accent-2)"/></linearGradient></defs>
         <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
       </svg><span class="wordmark">Flymate</span></div>
-    <nav class="nav" aria-label="Sections"><a href="#verdict">Verdict</a><a href="#live">Live</a><a href="#weather">Weather</a><a href="#charts">Charts</a></nav>
   </header>
 
   <form class="card search" id="ask" novalidate>
@@ -550,7 +575,7 @@ body{background-color:var(--page-a);background-image:linear-gradient(160deg,var(
       <div class="seg" id="seg" role="radiogroup" aria-labelledby="slotLab"><span class="seg-ind" aria-hidden="true"></span></div>
       <select id="slot" hidden></select></div>
     <div class="f"><span class="lab">Airline</span><select id="airline" aria-label="Airline"></select></div>
-    <div class="f"><label for="price">Price you see</label>
+    <div class="f"><label for="price">Price you see <span class="opt-lab">optional</span></label>
       <div class="dd price-dd"><div class="price"><span>RM</span><input class="ctl" type="number" id="price" value="389" min="30" max="5000" role="combobox" aria-expanded="false" aria-controls="priceList" aria-autocomplete="none"><i class="chev" aria-hidden="true"></i></div>
       <ul class="dd-list" id="priceList" role="listbox" aria-label="Prices, low to high"></ul></div></div>
     <button class="btn" type="submit">Check flight</button>
@@ -939,7 +964,7 @@ function build(s) {
   // receipt: compare yours with Flymate's pick, or with the flight that only looks cheapest
   const cheapLook = flights.filter(f => f !== cur).sort((a, b) => a.price - b.price)[0];
   const rival = sw || (cheapLook && cheapLook.price < cur.price && cheapLook.total > cur.total ? cheapLook : null);
-  return {s, cur, flights, best: sw || cur, hist, lateN, fair, ratio, rise, big, sub, subCls, reasons, riseAt, seats, rival, rivalKind: sw ? 'pick' : 'cheap', bt: backtest(s)};
+  return {s, cur, action, flights, best: sw || cur, hist, lateN, fair, ratio, rise, big, sub, subCls, reasons, riseAt, seats, rival, rivalKind: sw ? 'pick' : 'cheap', bt: backtest(s)};
 }
 
 // landing late at night means surge pricing on the ride home; a delay makes it more likely
@@ -1052,12 +1077,21 @@ function drawBacktest(m) {
   });
 }
 
+let mtab = 'why', delaySub = 'delays';
+const MTABS = [['why', 'Why'], ['flights', 'Flights'], ['weather', 'Weather'], ['price', 'Price'], ['delays', 'Delays']];
+
 function render(m) {
   const {s, cur} = m;
   const dCls = cur.p >= .45 ? 'bad' : cur.p >= .2 ? 'warn' : 'good', dWord = {bad:'High', warn:'Medium', good:'Low'}[dCls];
-  const pCls = m.ratio > 1.08 ? 'bad' : m.ratio < .92 ? 'good' : 'warn', pWord = m.ratio > 1.08 ? 'Too high' : m.ratio < .92 ? 'Good deal' : 'Fair';
+  const pCls = m.ratio > 1.08 ? 'bad' : m.ratio < .92 ? 'good' : 'warn';
   const rCls = m.rise/m.fair > .1 ? 'bad' : m.rise > 0 ? 'warn' : 'good';
   const status = cur.p >= .45 ? ['Likely late', 'var(--trk-bad)'] : cur.p >= .2 ? ['Some risk', 'var(--trk-warn)'] : ['On time', 'var(--trk-good)'];
+  // one next step: switch if Flymate found a better flight, otherwise book, or set a reminder when it's too early
+  const pick = m.rivalKind === 'pick' ? m.rival : null;
+  const cta = pick ? {kind: 'switch', label: `Switch to ${hhmm(pick.dep)} ${AIRLINES[pick.airline].name} · save RM ${Math.round(cur.total - pick.total)}`}
+    : m.action === 'Book now' ? {kind: 'book', label: `Book ${cur.flightNo} · RM ${s.price}`}
+    : {kind: 'remind', label: s.days > 24 ? `Remind me on ${fmtDate(addDays(s.dt, -20))}` : `Alert me under RM ${m.fair}`};
+  const panel = (k, html) => `<div class="mpanel" data-panel="${k}" role="tabpanel"${k === mtab ? '' : ' hidden'}>${html}</div>`;
   $('#result').innerHTML = `
   <div class="stack">
     <section class="card verdict fade tilt" id="verdict">
@@ -1065,10 +1099,11 @@ function render(m) {
         <p class="label">Flymate says</p>
         <h1 class="big">${m.big}</h1>
         <p class="sub tone-${m.subCls}">${m.sub}</p>
-        <div class="urg">
-          ${s.days > 1 ? `<span class="urg-chip ${m.riseAt - Date.now() < 48 * 3600e3 ? 'hot' : ''}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg>Price rises in <b id="cdown">--</b></span>` : ''}
-          <span class="urg-chip ${m.seats <= 5 ? 'hot' : ''}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4v10a2 2 0 0 0 2 2h8M6 20h12M16 16v4M8 4h2"/></svg><b>${m.seats}</b> seats left at this price</span>
+        <div class="cta-row">
+          <button type="button" class="btn cta" id="cta">${cta.label}</button>
+          <span class="trust">Based on 26 weeks of this flight · right ${Math.round(m.bt.acc * 100)}% of the time</span>
         </div>
+        <p class="cta-note" id="ctaNote" hidden></p>
         <div class="flight">${cur.flightNo}, ${s.from} ${hhmm(cur.dep)} to ${s.to} ${hhmm(cur.arr)}, ${s.dt.toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'})}${cur.hol ? `, <b class="hol-chip">${cur.hol.label}</b>` : ''}</div>
       </div>
       <div class="stats">
@@ -1078,119 +1113,148 @@ function render(m) {
       </div>
     </section>
 
-    <div class="two fade">
-      <section class="card panel tilt soft"><h2>Why, and what to do</h2>
-        <ul class="rows">${m.reasons.map(r => `<li>
-          <div class="why-row"><span class="why"><i class="${r.l}"></i>${r.t}</span><span class="val">${r.v}</span></div>
-          <div class="move"><span class="move-t">${r.a}</span>${r.act ? `<button type="button" class="move-btn" data-act="${r.act}">${r.btn}</button>` : ''}</div>
-        </li>`).join('')}</ul>
-      </section>
-      <section class="card panel tilt soft">
-        <div class="phead"><h2>Flights that day</h2><div id="sortSeg" aria-label="Sort flights"></div></div>
-        <div class="opthead"><span>Flight</span><span>Price</span><span>Delay</span></div>
-        <div id="flightRows"></div>
-      </section>
-    </div>
+    <section class="card detail fade sheen" aria-label="Details">
+      <div class="mtabs" role="tablist" aria-label="Details"><span class="mtab-ind" aria-hidden="true"></span>
+        ${MTABS.map(([k, l]) => `<button type="button" role="tab" data-mtab="${k}" aria-selected="${k === mtab}">${l}</button>`).join('')}
+      </div>
 
-    <div class="two money">
-      ${receiptHTML(m)}
-      <section class="card panel proof tilt soft" aria-label="Backtest">
-        <h2 class="proof-h">Flymate would have saved you</h2>
-        <p class="proof-ctx">If you'd flown this route every ${s.dt.toLocaleDateString('en-GB', {weekday:'long'})} for the last 13 weeks.</p>
-        <div class="proof-nums">
-          <div><div class="proof-big ${m.bt.saved >= 0 ? 'tone-good' : 'tone-bad'}" id="btSaved">RM 0</div><span>saved</span></div>
-          <div><div class="proof-big" id="btDodged">0</div><span>${Math.max(0, m.bt.dodged) === 1 ? 'delay' : 'delays'} dodged</span></div>
-        </div>
-        <div class="chart" id="btChart" style="min-height:150px"></div>
-        <div class="legend"><span><i class="sw" style="background:var(--accent)"></i>Following Flymate</span><span><i class="sw" style="background:var(--ink-3)"></i>Usual way</span><span class="trust">Called delays right <b>${Math.round(m.bt.acc * 100)}%</b> of the time</span></div>
-      </section>
-    </div>
+      ${panel('why', `<div class="two">
+        <section class="panel"><h2>What to do</h2>
+          <ul class="rows">${m.reasons.map(r => `<li>
+            <div class="why-row"><span class="why"><i class="${r.l}"></i>${r.t}</span><span class="val">${r.v}</span></div>
+            <div class="move"><span class="move-t">${r.a}</span>${r.act ? `<button type="button" class="move-btn" data-act="${r.act}">${r.btn}</button>` : ''}</div>
+          </li>`).join('')}</ul>
+        </section>
+        <section class="panel proof" aria-label="Backtest">
+          <h2 class="proof-h">Flymate would have saved you</h2>
+          <p class="proof-ctx">Flying this route every ${s.dt.toLocaleDateString('en-GB', {weekday:'long'})} for the last 13 weeks.</p>
+          <div class="proof-nums">
+            <div><div class="proof-big ${m.bt.saved >= 0 ? 'tone-good' : 'tone-bad'}" id="btSaved">RM 0</div><span>saved</span></div>
+            <div><div class="proof-big" id="btDodged">0</div><span>${Math.max(0, m.bt.dodged) === 1 ? 'delay' : 'delays'} dodged</span></div>
+          </div>
+          <div class="chart" id="btChart" style="min-height:150px"></div>
+          <div class="legend"><span><i class="sw" style="background:var(--accent)"></i>Following Flymate</span><span><i class="sw" style="background:var(--ink-3)"></i>Usual way</span></div>
+        </section>
+      </div>`)}
 
-    <section class="trk fade" id="live" aria-label="Simulated flight preview">
-      <div class="trk-map" id="trkMap">
-        <canvas id="trkCanvas" aria-hidden="true"></canvas>
-        <div class="trk-chip"><span class="live"></span>Live <b>${cur.flightNo}</b></div>        <div class="trk-stats">
-          <div><span>Altitude</span><b id="tAlt">0 m</b></div>
-          <div><span>Speed</span><b id="tSpd">0 km/h</b></div>
-          <div><span>Status</span><b style="color:${status[1]}">${status[0]}</b></div>
-        </div>
-        <div class="trk-label" id="lFrom"><b>${AIRPORTS[s.from].name}</b><span>Departure ${hhmm(cur.dep)}</span></div>
-        <div class="trk-label" id="lTo"><b>${AIRPORTS[s.to].name}</b><span>Arrival ${hhmm(cur.arr)}</span></div>
-        <div class="trk-plane" id="plane">${PLANE_SVG}</div>
-      </div>
-      <div class="trk-bottom">
-        <div class="ring">
-          <svg viewBox="0 0 84 84" aria-hidden="true"><defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2997ff"/><stop offset=".55" stop-color="#2997ff"/><stop offset="1" stop-color="#2997ff"/></linearGradient></defs>
-            <circle class="track" cx="42" cy="42" r="36"/><circle class="prog" id="ringProg" cx="42" cy="42" r="36" stroke-dasharray="226.2" stroke-dashoffset="226.2"/></svg>
-          <div class="txt"><b id="tPct">0%</b><span>flown</span></div>
-        </div>
-        <div class="trk-prog">
-          <div class="trk-row"><div class="km"><span id="tKm">0</span><span> / ${spaced(cur.km)} km</span></div><div class="eta" id="tEta"></div></div>
-          <div class="scrub" id="scrub" role="progressbar" aria-label="Flight progress" aria-valuemin="0" aria-valuemax="100"><i></i></div>
-          <div class="trk-row small"><span>${s.from} ${hhmm(cur.dep)}</span><span>${s.to} ${hhmm(cur.arr)}${cur.arr >= 1440 ? ' +1' : ''}</span></div>
-        </div>
-      </div>
-    </section>
+      ${panel('flights', `<section class="panel">
+          <div class="phead"><h2>Flights that day</h2><div id="sortSeg" aria-label="Sort flights"></div></div>
+          <div class="opthead"><span>Flight</span><span>Price</span><span>Delay</span></div>
+          <div id="flightRows"></div>
+        </section>
+        <section class="trk" aria-label="Simulated flight preview">
+          <div class="trk-map" id="trkMap">
+            <canvas id="trkCanvas" aria-hidden="true"></canvas>
+            <div class="trk-chip"><span class="live"></span>Live <b>${cur.flightNo}</b></div>
+            <div class="trk-stats">
+              <div><span>Altitude</span><b id="tAlt">0 m</b></div>
+              <div><span>Speed</span><b id="tSpd">0 km/h</b></div>
+              <div><span>Status</span><b style="color:${status[1]}">${status[0]}</b></div>
+            </div>
+            <div class="trk-label" id="lFrom"><b>${AIRPORTS[s.from].name}</b><span>Departure ${hhmm(cur.dep)}</span></div>
+            <div class="trk-label" id="lTo"><b>${AIRPORTS[s.to].name}</b><span>Arrival ${hhmm(cur.arr)}</span></div>
+            <div class="trk-plane" id="plane">${PLANE_SVG}</div>
+          </div>
+          <div class="trk-bottom">
+            <div class="ring">
+              <svg viewBox="0 0 84 84" aria-hidden="true"><defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2997ff"/><stop offset="1" stop-color="#2997ff"/></linearGradient></defs>
+                <circle class="track" cx="42" cy="42" r="36"/><circle class="prog" id="ringProg" cx="42" cy="42" r="36" stroke-dasharray="226.2" stroke-dashoffset="226.2"/></svg>
+              <div class="txt"><b id="tPct">0%</b><span>flown</span></div>
+            </div>
+            <div class="trk-prog">
+              <div class="trk-row"><div class="km"><span id="tKm">0</span><span> / ${spaced(cur.km)} km</span></div><div class="eta" id="tEta"></div></div>
+              <div class="scrub" id="scrub" role="progressbar" aria-label="Flight progress" aria-valuemin="0" aria-valuemax="100"><i></i></div>
+              <div class="trk-row small"><span>${s.from} ${hhmm(cur.dep)}</span><span>${s.to} ${hhmm(cur.arr)}${cur.arr >= 1440 ? ' +1' : ''}</span></div>
+            </div>
+          </div>
+        </section>`)}
 
-    <section class="wx fade" id="weather" aria-label="Weather map">
-      <div class="wx-head">
-        <div><div class="wx-title">Weather</div><div class="wx-sub">${s.from} to ${s.to}, ${fmtDate(s.dt)}</div></div>
-        <div id="wxLayer" aria-label="Map layer"></div>
-      </div>
-      <div class="wx-map" id="wxMap">
-        <canvas id="wxCanvas" aria-hidden="true"></canvas>
-        <div class="wx-tip" id="wxTip" hidden></div>
-      </div>
-      <div class="wx-ctrl">
-        <button type="button" class="play" id="wxPlay" aria-label="Pause"><svg viewBox="0 0 24 24" aria-hidden="true"><path id="wxPlayIco" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg></button>
-        <div class="wx-time" id="wxTime">00:00</div>
-        <div class="wx-slider">
-          <input type="range" id="wxHour" min="0" max="23.9" step="0.1" value="0" aria-label="Hour of day">
-          ${cur.arr - cur.dep < 150 ? `<span class="wx-mark" style="left:${Math.min(cur.dep, 1439) / 1440 * 100}%">Your flight</span>` :
-          `<span class="wx-mark" style="left:${Math.min(cur.dep, 1439) / 1440 * 100}%">Takeoff</span><span class="wx-mark" style="left:${Math.min(cur.arr, 1439) / 1440 * 100}%">Landing</span>`}
-        </div>
-      </div>
-      <div class="wx-legend"><span id="wxLo"></span><i class="wx-bar" id="wxBar"></i><span id="wxHi"></span></div>
-    </section>
+      ${panel('weather', `<section class="wx" aria-label="Weather map">
+          <div class="wx-head">
+            <div><div class="wx-title">Along your route</div><div class="wx-sub">${s.from} to ${s.to}, ${fmtDate(s.dt)}</div></div>
+            <div id="wxLayer" aria-label="Map layer"></div>
+          </div>
+          <div class="wx-map" id="wxMap">
+            <canvas id="wxCanvas" aria-hidden="true"></canvas>
+            <div class="wx-tip" id="wxTip" hidden></div>
+          </div>
+          <div class="wx-ctrl">
+            <button type="button" class="play" id="wxPlay" aria-label="Pause"><svg viewBox="0 0 24 24" aria-hidden="true"><path id="wxPlayIco" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg></button>
+            <div class="wx-time" id="wxTime">00:00</div>
+            <div class="wx-slider">
+              <input type="range" id="wxHour" min="0" max="23.9" step="0.1" value="0" aria-label="Hour of day">
+              ${cur.arr - cur.dep < 150 ? `<span class="wx-mark" style="left:${Math.min(cur.dep, 1439) / 1440 * 100}%">Your flight</span>` :
+              `<span class="wx-mark" style="left:${Math.min(cur.dep, 1439) / 1440 * 100}%">Takeoff</span><span class="wx-mark" style="left:${Math.min(cur.arr, 1439) / 1440 * 100}%">Landing</span>`}
+            </div>
+          </div>
+          <div class="wx-legend"><span id="wxLo"></span><i class="wx-bar" id="wxBar"></i><span id="wxHi"></span></div>
+        </section>
+        <div class="chart-host"></div>`)}
 
-    <section class="panel chart-sec sheen" id="charts">
-      <div class="chead">
-        <div class="tabs" role="tablist"><span class="tab-ind" aria-hidden="true"></span>
-          <button role="tab" data-tab="price">Price</button>
-          <button role="tab" data-tab="delays">Delays</button>
-          <button role="tab" data-tab="best">Best time</button>
-          <button role="tab" data-tab="weather">Weather</button>
-        </div>
-        <div class="copt"><span class="cnote" id="cnote"></span><div id="chartOpt"></div></div>
-      </div>
-      <div class="chart" id="chart" role="tabpanel"></div>
-      <div class="legend" id="legend"></div>
+      ${panel('price', `${receiptHTML(m)}<section class="panel"><h2>Fare forecast</h2><div class="chart-host"></div></section>`)}
+
+      ${panel('delays', `<section class="panel"><h2>Delay record</h2><div class="chart-host">
+          <div id="chartBox"><div class="chead"><div id="subSeg"></div><div class="copt"><span class="cnote" id="cnote"></span><div id="chartOpt"></div></div></div>
+          <div class="chart" id="chart"></div><div class="legend" id="legend"></div></div>
+        </div></section>`)}
     </section>
   </div>`;
 
   tween($('#nDelay'), 'delay', cur.p * 100, v => Math.round(v) + '%');
+  tween($('#nFair'), 'fair', m.fair, v => '<small>RM</small>' + Math.round(v));
+  if (m.rise > 0) tween($('#nRise'), 'rise', m.rise, v => '<small>+RM</small>' + Math.round(v)); else { $('#nRise').textContent = 'Flat'; prevNums.rise = 0; }
   prevNums.saved = 0; prevNums.dodged = 0;
   tween($('#btSaved'), 'saved', m.bt.saved, v => (v < 0 ? '−RM ' : 'RM ') + spaced(Math.abs(v)));
   tween($('#btDodged'), 'dodged', Math.max(0, m.bt.dodged), v => String(Math.round(v)));
-  drawBacktest(m);
-  startCountdown(m);
-  $('#rcSwitch')?.addEventListener('click', () => {
-    const f = m.rival; $('#slot').value = f.slotKey; segDep.set(f.slotKey);
-    $('#airline').value = f.airline; $('#airline').sync(); $('#price').value = f.price; update(); window.scrollTo({top: 0, behavior: reduced ? 'auto' : 'smooth'});
+
+  const smooth = reduced ? 'auto' : 'smooth';
+  const switchTo = f => {
+    $('#slot').value = f.slotKey; segDep.set(f.slotKey);
+    $('#airline').value = f.airline; $('#airline').sync(); $('#price').value = f.price; update(); window.scrollTo({top: 0, behavior: smooth});
+  };
+  $('#cta').addEventListener('click', () => {
+    if (cta.kind === 'switch') return switchTo(pick);
+    const note = $('#ctaNote');
+    note.textContent = cta.kind === 'book' ? `Demo: this would open ${AIRLINES[cur.airline].name}'s booking page for ${cur.flightNo}.`
+      : s.days > 24 ? `Demo: Flymate would remind you on ${fmtDate(addDays(s.dt, -20))}, before fares start rising.` : `Demo: Flymate would alert you when the fare drops under RM ${m.fair}.`;
+    note.hidden = false;
   });
-  tween($('#nFair'), 'fair', m.fair, v => '<small>RM</small>' + Math.round(v));
-  if (m.rise > 0) tween($('#nRise'), 'rise', m.rise, v => '<small>+RM</small>' + Math.round(v)); else { $('#nRise').textContent = 'Flat'; prevNums.rise = 0; }
+  $('#rcSwitch')?.addEventListener('click', () => switchTo(m.rival));
 
   makeSeg($('#sortSeg'), [{k:'best', label:'Best'}, {k:'price', label:'Cheapest'}, {k:'delay', label:'On time'}], flightSort, k => { flightSort = k; drawFlights(); });
   drawFlights();
+  document.querySelectorAll('[data-mtab]').forEach(b => b.addEventListener('click', () => setMain(b.dataset.mtab)));
   document.querySelectorAll('.move-btn').forEach(b => b.addEventListener('click', () => {
-    const [kind, val] = b.dataset.act.split(':'), smooth = reduced ? 'auto' : 'smooth';
-    if (kind === 'slot') { $('#slot').value = val; segDep.set(val); $('#price').value = b.dataset.act.split(':')[2]; update(); window.scrollTo({top: 0, behavior: smooth}); }
-    else if (kind === 'sort') { flightSort = val; showAll = true; makeSeg($('#sortSeg'), [{k:'best', label:'Best'}, {k:'price', label:'Cheapest'}, {k:'delay', label:'On time'}], flightSort, k => { flightSort = k; drawFlights(); }); drawFlights(); $('#flightRows').scrollIntoView({behavior: smooth, block: 'center'}); }
-    else if (kind === 'tab') { tab = val; syncTabs(); drawChart(); $('#chart').scrollIntoView({behavior: smooth, block: 'center'}); }
+    const [kind, val] = b.dataset.act.split(':'), detail = document.querySelector('.detail');
+    if (kind === 'slot') { $('#slot').value = val; segDep.set(val); $('#price').value = b.dataset.act.split(':')[2]; update(); window.scrollTo({top: 0, behavior: smooth}); return; }
+    if (kind === 'sort') {
+      flightSort = val; showAll = true; setMain('flights');
+      makeSeg($('#sortSeg'), [{k:'best', label:'Best'}, {k:'price', label:'Cheapest'}, {k:'delay', label:'On time'}], flightSort, k => { flightSort = k; drawFlights(); }); drawFlights();
+    } else if (kind === 'tab') setMain(val === 'price' ? 'price' : 'delays', val === 'best' ? 'best' : val === 'delays' ? 'delays' : undefined);
+    detail.scrollIntoView({behavior: smooth, block: 'start'});
   }));
-  document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => { tab = b.dataset.tab; syncTabs(); drawChart(); }));
-  syncTabs(); drawChart(); initTrack(m); initRadar(m); bindTilt(); bindFlightPause();
+  setMain(mtab); initTrack(m); initRadar(m); bindTilt(); bindFlightPause();
+}
+
+// one detail tab at a time; the chart card moves into whichever tab needs it
+function setMain(k, sub) {
+  mtab = k; if (sub) delaySub = sub;
+  document.querySelectorAll('[data-mtab]').forEach(b => b.setAttribute('aria-selected', b.dataset.mtab === k));
+  document.querySelectorAll('.mpanel').forEach(p => p.hidden = p.dataset.panel !== k);
+  syncMain();
+  const host = document.querySelector(`.mpanel[data-panel="${k}"] .chart-host`), box = $('#chartBox');
+  if (host && box) {
+    host.appendChild(box);
+    tab = k === 'delays' ? delaySub : k;
+    const ss = $('#subSeg'); ss.innerHTML = ''; ss.className = ''; ss.removeAttribute('style');
+    if (k === 'delays') makeSeg(ss, [{k:'delays', label:'History'}, {k:'best', label:'Best time'}], delaySub, v => { delaySub = v; tab = v; drawChart(); });
+    drawChart();
+  }
+  if (k === 'why' && model) drawBacktest(model);
+}
+function syncMain() {
+  const b = document.querySelector('[data-mtab][aria-selected="true"]'), ind = document.querySelector('.mtab-ind');
+  if (b && ind) { ind.style.width = b.offsetWidth + 'px'; ind.style.transform = `translateX(${b.offsetLeft}px)`; }
 }
 
 function drawFlights() {
@@ -1495,7 +1559,7 @@ function initGlobe(m) {
   const sideFrom = A.lon <= B.lon ? -1 : 1;
 
   function frame(p, now, dir, turn) {
-    if (!document.body.contains(cv)) return;
+    if (!document.body.contains(cv) || !cv.offsetParent) return;
     const q = dir > 0 ? p : 1 - p, sway = reduced ? 0 : Math.sin(now / 7000) * .05;
     if (!drag && performance.now() - lastDrag > 3000) { offY = Math.atan2(Math.sin(offY), Math.cos(offY)) * .97; offX *= .97; }
     globe.rotation.set(rx0 + offX, ry0 + offY + sway, 0);
@@ -1647,7 +1711,7 @@ function setPlaying(on) {
       // slow the clock while the plane is in the air so its flight through the weather is easy to follow
       const c = wx.m.cur, min = wx.hour * 60, flying = min > c.dep - 25 && min < c.arr + 25;
       wx.hour = (wx.hour + (t - wx.last) / 1000 * (flying ? .32 : 1.3)) % 24; wx.last = t;
-      $('#wxHour').value = wx.hour; drawRadar(); wx.raf = requestAnimationFrame(loop);
+      $('#wxHour').value = wx.hour; if (wx.ctx.canvas.offsetParent) drawRadar(); wx.raf = requestAnimationFrame(loop);
     };
     wx.raf = requestAnimationFrame(loop);
   }
@@ -2005,10 +2069,10 @@ $('#swap').addEventListener('click', e => {
   $('#from').sync(); $('#to').sync(); e.currentTarget.classList.toggle('spin'); update({resetPrice: true});
 });
 let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => {
-  if (!model) return; drawChart(); syncTabs(); initTrack(model);
+  if (!model) return; drawChart(); syncMain(); if (mtab === 'why') drawBacktest(model); initTrack(model);
   const keep = wx ? {h: wx.hour, on: wx.playing} : null; initRadar(model);
   if (keep) { wx.hour = keep.h; $('#wxHour').value = keep.h; setPlaying(keep.on); drawRadar(); }
 }, 150); });
-update();
+update({resetPrice: true});
 })();
 </script>
