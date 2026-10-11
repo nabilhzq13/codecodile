@@ -13,10 +13,10 @@ Built for the *Predictive Model Track: Predict Early, Decide Better* hackathon.
 
 ## Try it
 
-Open `Flymate.html` in a browser. No install, no login.
+Open `Flymate.html` in a browser. No install, no login. The 3D globe loads three.js from a CDN, so it needs an internet connection; without it the tracker falls back to a flat map.
 
 - Pick route, date (up to 3 months ahead), time of day, airline and the price you see.
-- Live-style flight tracker, animated rain / temperature / wind map, fare calendar, price forecast, delay history, best-time heat map and a 7-day weather view.
+- 3D globe flight tracker (drag to turn) in a glassmorphism theme, animated rain / temperature / wind map, fare calendar, price forecast, delay history, best-time heat map and a 7-day weather view.
 
 ## Data
 
